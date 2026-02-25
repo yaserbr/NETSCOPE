@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>NETSCOPE</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+  <!-- Bootstrap -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+
+  <!-- Your CSS -->
+  <link href="/css/styles.css" rel="stylesheet">
+</head>
+
+<body class="dashboard-bg">
+
+  <!-- Background -->
+  <div class="gradient-bg22"></div>
+
+  <div class="shapes">
+    <span class="shape s1"></span>
+    <span class="shape s2"></span>
+    <span class="shape s3"></span>
+    <span class="shape s4"></span>
+  </div>
+
+  <!-- ================= HEADER ================= -->
+
+  <header class="main-header">
+    <div class="header-wrap">
+
+      <div class="header-left">
+        <h1 class="logo">NETSCOPE</h1>
+        <span class="subtitle">Test internet speed & detect problems</span>
+      </div>
+
+      <div class="header-right">
+
+        <div class="logo-box">
+          <img src="/images/logo.png" alt="NETSCOPE Logo" class="logo-img">
+        </div>
+
+      </div>
+
+    </div>
+  </header>
+
+  <!-- ================= HERO ================= -->
+
+  <section class="container text-center py-5">
+
+    <h1 class="fw-bold mb-2" style="color:#FFB400;">
+      Test Your Internet Speed
+    </h1>
+
+    <p class="text-muted mb-4">
+      Measure performance, detect problems, and optimize your connection
+    </p>
+
+    <button onclick="startSpeedTest()">Start Now</button>
+
+  </section>
+
+  <!-- ================= MAIN ================= -->
+
+  <main class="container pb-5">
+
+    <div class="row justify-content-center">
+
+      <div class="col-lg-6 col-md-8 col-sm-12">
+
+        <!-- Speed Card -->
+        <div class="glass-card p-4 mt-4">
+
+          <!-- Gauge -->
+          <div class="text-center mb-4">
+
+            <div class="speed-gauge" id="gaugeBox">
+
+              <svg viewBox="0 0 200 200">
+
+                <!-- Background Circle -->
+                <circle cx="100" cy="100" r="85" class="gauge-bg" />
+
+                <!-- Progress Circle -->
+                <circle cx="100" cy="100" r="85" class="gauge-progress" id="gaugeProgress" />
+
+              </svg>
+
+              <!-- Speed Text -->
+              <div class="gauge-center">
+
+                <span id="gaugeText">0</span>
+                <small>Mbps</small>
+
+              </div>
+
+            </div>
+
+          </div>
+
+          <!-- Speed Info -->
+          <div class="row text-center mb-3">
+
+            <div class="col-4">
+              <p class="mb-1">📡 Ping</p>
+              <strong id="pingValue">0</strong> ms
+            </div>
+
+            <div class="col-4">
+              <p class="mb-1">⬇ Download</p>
+              <strong id="downloadValue">0</strong> Mbps
+            </div>
+
+            <div class="col-4">
+              <p class="mb-1">⬆ Upload</p>
+              <strong id="uploadValue">0</strong> Mbps
+            </div>
+
+          </div>
+
+          <!-- Status -->
+          <div class="text-center mb-3">
+            <p id="statusText" class="fw-semibold"></p>
+          </div>
+
+          <!-- ================= AI RESULT ================= -->
+
+          <div id="resultBox" class="mt-4 d-none">
+
+            <h4 class="text-center mb-3">
+              🔍 AI Network Diagnosis
+            </h4>
+
+            <div id="aiResult" class="text-center" style="
+    background: rgba(255,255,255,0.08);
+    color: #fff;
+    line-height: 1.8;
+    white-space: pre-line;
+    direction: rtl;
+    text-align: center;
+    font-family: 'Cairo', sans-serif;
+    padding: 15px;
+    border-radius: 12px;
+  ">
+              Waiting for analysis...
+            </div>
+
+          </div>
+
+        </div>
+        <!-- End Card -->
+
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- ================= FOOTER ================= -->
+
+  <footer class="text-center pb-4 small text-muted">
+
+    © 2026 NETSCOPE • Network Analyzer
+
+  </footer>
+
+  <!-- ================= JS ================= -->
+  <script src="/js/main.js"></script>
+
+</body>
+
+</html>
