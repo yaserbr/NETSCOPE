@@ -41,32 +41,35 @@ document.addEventListener("DOMContentLoaded", () => {
   // ================= AI =================
 
   async function requestAIAnalysis(ping, down, up) {
+
+    const selectedRadio = document.querySelector(
+      'input[name="connection"]:checked'
+    );
+
+    const connectionType = selectedRadio
+      ? selectedRadio.value
+      : "wifi";
+
     showStatus("Analyzing with AI... 🤖");
 
-    try {
-      const res = await fetch("/api/analyze-ai", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          ping,
-          download: down,
-          upload: up,
-        }),
-      });
+    const res = await fetch("/api/analyze-ai", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        ping,
+        download: down,
+        upload: up,
+        connection: connectionType,
+      }),
+    });
 
-      const data = await res.json();
+    const data = await res.json();
 
-      showAIResult(data.analysis);
-
-      showStatus("Analysis completed ✅");
-
-    } catch (err) {
-      console.error("AI Error:", err);
-
-      showStatus("AI analysis failed ❌");
-    }
+    showAIResult(data.analysis);
+    console.log(connectionType, ping, down, up, "=>", data.analysis);
+    
   }
 
   function showAIResult(text) {
