@@ -40,7 +40,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // ================= AI =================
 
-  async function requestAIAnalysis(ping, down, up) {
+  async function requestAIAnalysis(ping, down, up, jitter) {
 
     const selectedRadio = document.querySelector(
       'input[name="connection"]:checked'
@@ -50,6 +50,17 @@ document.addEventListener("DOMContentLoaded", () => {
       ? selectedRadio.value
       : "wifi";
 
+    const payload = {
+      ping,
+      jitter,
+      download: down,
+      upload: up,
+      connection: connectionType,
+    };
+
+
+    console.log("Sending to AI:", payload);
+
     showStatus("Analyzing with AI... 🤖");
 
     const res = await fetch("/api/analyze-ai", {
@@ -57,19 +68,16 @@ document.addEventListener("DOMContentLoaded", () => {
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        ping,
-        download: down,
-        upload: up,
-        connection: connectionType,
-      }),
+      body: JSON.stringify(payload),
     });
 
     const data = await res.json();
 
     showAIResult(data.analysis);
-    console.log(connectionType, ping, down, up, "=>", data.analysis);
-    
+
+    console.log("AI Response:", data);
+    showStatus("AI Analysis Complete ✅");
+
   }
 
   function showAIResult(text) {
@@ -98,6 +106,35 @@ document.addEventListener("DOMContentLoaded", () => {
     safeSet("final", down.toFixed(1));
   }
 
+  // ================= PING + JITTER =================
+
+  async function measurePingAndJitter() {
+
+    const samples = [];
+
+    for (let i = 0; i < 5; i++) {
+      const start = performance.now();
+
+      await fetch("https://speed.cloudflare.com/cdn-cgi/trace?nocache=" + Date.now(), {
+        cache: "no-store",
+      });
+
+      const end = performance.now();
+
+      samples.push(end - start);
+    }
+
+    const avgPing =
+      samples.reduce((a, b) => a + b, 0) / samples.length;
+
+    const jitter =
+      Math.max(...samples) - Math.min(...samples);
+
+    return {
+      ping: avgPing,
+      jitter: jitter
+    };
+  }
   // ================= SPEED TEST =================
 
   async function startSpeedTest() {
@@ -105,18 +142,12 @@ document.addEventListener("DOMContentLoaded", () => {
     showStatus("Testing... ⏳");
 
     try {
+      // -------- Ping + Jitter --------
 
-      // -------- Ping --------
+      const pingData = await measurePingAndJitter();
 
-      const pingStart = performance.now();
-
-      await fetch("https://speed.cloudflare.com/cdn-cgi/trace", {
-        cache: "no-store",
-      });
-
-      const ping = performance.now() - pingStart;
-
-      lastPing = ping;
+      lastPing = pingData.ping;
+      const jitter = pingData.jitter;
 
 
       // -------- Download --------
@@ -174,7 +205,8 @@ document.addEventListener("DOMContentLoaded", () => {
       await requestAIAnalysis(
         lastPing,
         lastDown,
-        lastUp
+        lastUp,
+        jitter
       );
 
     } catch (err) {
