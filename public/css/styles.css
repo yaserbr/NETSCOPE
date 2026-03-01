@@ -110,7 +110,7 @@ button{
 
 button:hover{
   transform:translateY(-3px);
-  box-shadow:0 12px 25px rgba(255,180,0,0.5);
+  box-shadow:0 12px 25px rgba(255,180,0,0.4);
 }
 
 /* GLASS CARD */
@@ -127,7 +127,7 @@ button:hover{
   display:block;
   margin-bottom:15px;
   font-weight:600;
-  color: #FFB400 !important;
+  color:#FFB400 !important;
 }
 
 .radio-group{
@@ -167,15 +167,14 @@ button:hover{
 
 .radio-card input:checked ~ .radio-custom{
   background-color:var(--gold-soft);
-  box-shadow:0 0 10px rgba(255,215,120,0.6);
 }
 
 .radio-card:hover{
   border-color:var(--gold-soft);
-  box-shadow:0 0 12px rgba(255,215,120,0.2);
 }
 
-/* GAUGE */
+/* ================= GAUGE ================= */
+
 .speed-gauge{
   position:relative;
   width:220px;
@@ -202,8 +201,30 @@ button:hover{
   stroke-linecap:round;
   stroke-dasharray:534;
   stroke-dashoffset:534;
-  transition:stroke-dashoffset 0.8s ease;
-  filter:drop-shadow(0 0 10px rgba(255,180,0,0.6));
+  transition:stroke-dashoffset 0.15s linear;
+  filter:none !important;
+  box-shadow:none !important;
+}
+
+/* ===== IDLE MODE (بدون إشعاع) ===== */
+
+.speed-gauge.idle .gauge-progress {
+  stroke-dasharray:120 40;
+  animation:dashMove 2s linear infinite;
+}
+
+@keyframes dashMove {
+  from { stroke-dashoffset:0; }
+  to   { stroke-dashoffset:-160; }
+}
+
+.speed-gauge.idle svg {
+  animation:slowRotate 8s linear infinite;
+}
+
+@keyframes slowRotate {
+  from { transform:rotate(-90deg); }
+  to   { transform:rotate(270deg); }
 }
 
 .gauge-center{
@@ -238,7 +259,8 @@ button:hover{
 #statusText{
   color:#eee;
 }
+
 .text-muted{
-  color: #FFB400 !important;
-  opacity: 0.85;
+  color:#FFB400 !important;
+  opacity:0.85;
 }

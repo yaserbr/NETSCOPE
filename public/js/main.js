@@ -1,47 +1,137 @@
 document.addEventListener("DOMContentLoaded", () => {
-  console.log("MAIN.JS VERSION 2026-02-25 (AI MODE)");
 
-  // ================= CONFIG =================
+  const gaugeBox = document.getElementById("gaugeBox");
+  const gaugeText = document.getElementById("gaugeText");
+  const gaugeCircle = document.getElementById("gaugeProgress");
+
+  let testCount = 0;
+
+  function enableIdleAnimation() {
+    gaugeBox.classList.add("idle");
+    gaugeText.textContent = "READY";
+    gaugeText.classList.add("idle-text");
+  }
+
+  function disableIdleAnimation() {
+    gaugeBox.classList.remove("idle");
+    gaugeText.classList.remove("idle-text");
+    gaugeText.textContent = "0";
+  }
+
+  async function restartAnimation() {
+    return new Promise(resolve => {
+
+      gaugeCircle.style.transition = "none";
+
+      gaugeBox.classList.add("restarting");
+      gaugeText.textContent = "Recalibrating...";
+      gaugeText.classList.add("restart-text");
+
+      setTimeout(() => {
+        gaugeBox.classList.remove("restarting");
+        gaugeText.classList.remove("restart-text");
+        gaugeText.textContent = "0";
+        gaugeCircle.style.transition = "stroke-dashoffset 0.15s linear";
+        resolve();
+      }, 1200);
+    });
+  }
+
+  enableIdleAnimation();
 
   const maxSpeed = 1000;
 
   let lastPing = 0;
   let lastDown = 0;
   let lastUp = 0;
-
-  // ================= STATUS =================
+  let latencyUnderLoad = 0;
 
   function showStatus(msg) {
     const el = document.getElementById("statusText");
     if (el) el.textContent = msg;
   }
 
-  // ================= GAUGE =================
-
   function updateGauge(speed) {
     if (!speed || speed < 0) speed = 0;
     if (speed > maxSpeed) speed = maxSpeed;
 
+    const circumference = 534;
     const percent = speed / maxSpeed;
-    const dashOffset = 330 * (1 - percent);
+    const dashOffset = circumference * (1 - percent);
 
-    const gauge = document.getElementById("gaugeProgress");
-    const gaugeText = document.getElementById("gaugeText");
-
-    if (!gauge || !gaugeText) return;
-
-    gauge.style.strokeDashoffset = dashOffset;
+    gaugeCircle.style.strokeDashoffset = dashOffset;
     gaugeText.textContent = speed.toFixed(1);
 
-    if (speed < 50) gauge.style.stroke = "#f44336";
-    else if (speed < 150) gauge.style.stroke = "#ff9800";
-    else gauge.style.stroke = "#4caf50";
+    const hue = Math.min(120, percent * 120);
+    gaugeCircle.style.stroke = `hsl(${hue},100%,50%)`;
+  }
+  function resetGaugeSmooth() {
+    let current = parseFloat(gaugeText.textContent) || 0;
+
+    const interval = setInterval(() => {
+      current -= current * 0.08; // نزول تدريجي ناعم
+
+      if (current <= 0.5) {
+        current = 0;
+        clearInterval(interval);
+      }
+
+      updateGauge(current);
+    }, 30);
+  }
+  async function getPublicIP() {
+    const res = await fetch(
+      "https://speed.cloudflare.com/cdn-cgi/trace?nocache=" + Date.now(),
+      { cache: "no-store" }
+    );
+    const text = await res.text();
+    const ipLine = text.split("\n").find(line => line.startsWith("ip="));
+    return ipLine ? ipLine.split("=")[1] : null;
   }
 
-  // ================= AI =================
+  async function fetchISPFromServer(ip) {
+    try {
+      const res = await fetch("/api/isp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ip })
+      });
+      return await res.json();
+    } catch (err) {
+      console.error("ISP fetch error:", err);
+      return null;
+    }
+  }
 
-  async function requestAIAnalysis(ping, down, up, jitter) {
+  function showISPInfo(data) {
+    const el = document.getElementById("ispInfo");
+    if (!el) return;
 
+    if (!data || !data.isp) {
+      el.textContent = "Unable to detect ISP";
+      return;
+    }
+
+    el.textContent =
+      `| ${data.isp} | ${data.city || "-"}, ${data.country || "-"} |`;
+  }
+
+  async function loadISPOnPageLoad() {
+    try {
+      const ip = await getPublicIP();
+      if (!ip) throw new Error("No IP");
+
+      const ispData = await fetchISPFromServer(ip);
+      showISPInfo(ispData);
+    } catch (err) {
+      console.error("ISP load error:", err);
+      showISPInfo(null);
+    }
+  }
+
+  loadISPOnPageLoad();
+
+  async function requestAIAnalysis(ping, down, up, jitter, latencyUnderLoad) {
     const selectedRadio = document.querySelector(
       'input[name="connection"]:checked'
     );
@@ -55,29 +145,22 @@ document.addEventListener("DOMContentLoaded", () => {
       jitter,
       download: down,
       upload: up,
+      latencyUnderLoad,
       connection: connectionType,
     };
-
-
-    console.log("Sending to AI:", payload);
 
     showStatus("Analyzing with AI... 🤖");
 
     const res = await fetch("/api/analyze-ai", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
 
     const data = await res.json();
 
     showAIResult(data.analysis);
-
-    console.log("AI Response:", data);
     showStatus("AI Analysis Complete ✅");
-
   }
 
   function showAIResult(text) {
@@ -85,42 +168,25 @@ document.addEventListener("DOMContentLoaded", () => {
     const output = document.getElementById("aiResult");
 
     if (output) output.textContent = text;
-
     if (box) box.classList.remove("d-none");
   }
 
-  // ================= RESULTS =================
-
   function showResults(ping, down, up) {
-
-    function safeSet(id, value) {
-      const el = document.getElementById(id);
-      if (el) el.textContent = value;
-    }
-
-    safeSet("pingValue", ping.toFixed(0));
-    safeSet("downloadValue", down.toFixed(1));
-    safeSet("uploadValue", up.toFixed(1));
-
-    safeSet("peak", down.toFixed(1));
-    safeSet("final", down.toFixed(1));
+    document.getElementById("pingValue").textContent = ping.toFixed(0);
+    document.getElementById("downloadValue").textContent = down.toFixed(1);
+    document.getElementById("uploadValue").textContent = up.toFixed(1);
   }
 
-  // ================= PING + JITTER =================
-
   async function measurePingAndJitter() {
-
     const samples = [];
 
     for (let i = 0; i < 5; i++) {
       const start = performance.now();
-
-      await fetch("https://speed.cloudflare.com/cdn-cgi/trace?nocache=" + Date.now(), {
-        cache: "no-store",
-      });
-
+      await fetch(
+        "https://speed.cloudflare.com/cdn-cgi/trace?nocache=" + Date.now(),
+        { cache: "no-store" }
+      );
       const end = performance.now();
-
       samples.push(end - start);
     }
 
@@ -130,58 +196,55 @@ document.addEventListener("DOMContentLoaded", () => {
     const jitter =
       Math.max(...samples) - Math.min(...samples);
 
-    return {
-      ping: avgPing,
-      jitter: jitter
-    };
+    return { ping: avgPing, jitter };
   }
-  // ================= SPEED TEST =================
 
   async function startSpeedTest() {
+
+    if (testCount === 0) {
+      disableIdleAnimation();
+    } else {
+      await restartAnimation();
+    }
+
+    testCount++;
 
     showStatus("Testing... ⏳");
 
     try {
-      // -------- Ping + Jitter --------
 
       const pingData = await measurePingAndJitter();
-
       lastPing = pingData.ping;
       const jitter = pingData.jitter;
 
-
-      // -------- Download --------
-
       const downStart = performance.now();
-
       const res = await fetch(
-        "https://speed.cloudflare.com/__down?bytes=20000000&nocache=" +
+        "https://speed.cloudflare.com/__down?bytes=500000000&nocache=" +
         Date.now()
       );
 
       const reader = res.body.getReader();
-
       let total = 0;
 
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
+
         total += value.length;
+
+        const elapsed = (performance.now() - downStart) / 1000;
+        const liveMbps = (total * 8) / elapsed / 1e6;
+
+        updateGauge(liveMbps);
       }
 
       const downTime = (performance.now() - downStart) / 1000;
-
       const downMbps = (total * 8) / downTime / 1e6;
 
       lastDown = downMbps;
-
       updateGauge(downMbps);
 
-
-      // -------- Upload --------
-
-      const size = 10 * 1024 * 1024;
-
+      const size = 25 * 1024 * 1024;
       const buffer = new Uint8Array(size);
 
       const upStart = performance.now();
@@ -192,13 +255,9 @@ document.addEventListener("DOMContentLoaded", () => {
       });
 
       const upTime = (performance.now() - upStart) / 1000;
-
       const upMbps = (size * 8) / upTime / 1e6;
 
       lastUp = upMbps;
-
-
-      // -------- Finish --------
 
       showResults(lastPing, lastDown, lastUp);
 
@@ -206,13 +265,18 @@ document.addEventListener("DOMContentLoaded", () => {
         lastPing,
         lastDown,
         lastUp,
-        jitter
+        jitter,
+        latencyUnderLoad
       );
 
+      showStatus("Test Complete ✅");
+
+      // بعد 2 ثانية يرجع العداد للصفر
+      setTimeout(() => {
+        resetGaugeSmooth();
+      }, 500);
     } catch (err) {
-
       console.error("Speed Test Error:", err);
-
       showStatus("Test failed ❌");
     }
   }
