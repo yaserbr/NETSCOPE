@@ -3,15 +3,21 @@ require("dotenv").config();
 const app = require("./app");
 const OpenAI = require("openai");
 
+const ispContacts = {
+  "STC": "900",
+  "Mobily": "1100",
+  "Zain": "959",
+  "STC Solutions": "920014400"
+};
+
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
 app.post("/api/analyze-ai", async (req, res) => {
   try {
-    const { ping, jitter, download, upload, latencyUnderLoad, connection } = req.body;
+    const { ping, jitter, download, upload, latencyUnderLoad, connection, isp } = req.body;
 
-    // تحقق من البيانات
     if (
       ping === undefined ||
       jitter === undefined ||
@@ -27,6 +33,15 @@ app.post("/api/analyze-ai", async (req, res) => {
 
     console.log("Received from client:", req.body);
 
+    // ===== Bufferbloat Calculation (داخلي فقط) =====
+    const latencyDifference = Number(latencyUnderLoad) - Number(ping);
+
+    let bufferbloatGrade;
+    if (latencyDifference <= 5) bufferbloatGrade = "A";
+    else if (latencyDifference <= 20) bufferbloatGrade = "B";
+    else if (latencyDifference <= 50) bufferbloatGrade = "C";
+    else bufferbloatGrade = "D";
+
     const prompt = `نتائج فحص الشبكة:
 
 نوع الاتصال: ${connection}
@@ -35,14 +50,14 @@ Jitter: ${Number(jitter).toFixed(1)} ms
 Download: ${Number(download).toFixed(1)} Mbps
 Upload: ${Number(upload).toFixed(1)} Mbps
 Latency Under Load: ${Number(latencyUnderLoad).toFixed(1)} ms
+Bufferbloat Grade: ${bufferbloatGrade}
+Latency Increase: ${latencyDifference.toFixed(1)} ms
 
 قم بتحليل احترافي دقيق ومتوازن.
 
 مهم جدًا:
 - قارن جميع المؤشرات ببعضها قبل تحديد المشكلة الرئيسية.
 - لا تعتبر أي قيمة مشكلة إذا كانت ضمن النطاق الطبيعي.
-- إذا كان Latency Under Load أعلى من Ping الطبيعي بأكثر من 70ms فهناك ضغط داخلي محتمل.
-- إذا كانت السرعة عالية لكن يوجد تذبذب أو فرق كبير تحت الضغط فالشبكة غير مستقرة.
 - لا تستخدم مصطلحات تقنية معقدة في النتيجة.
 - استخدم وصفًا مفهومًا للمستخدم العادي.
 
@@ -61,8 +76,6 @@ Latency Under Load: ${Number(latencyUnderLoad).toFixed(1)} ms
 اكتب النتيجة بهذا التنسيق فقط:
 
 التقييم العام: (ممتاز / جيد جدا / متوسط / ضعيف)
-لو الشبكة ضعيفة، حدد المشكلة الرئيسية والموقع المحتمل والأسباب والحلول بشكل مختصر وواضح.
-ولو الشبكة جيدة، اذكر أن كل شيء طبيعي ولا توجد مشكلة واضحة.
 
 المشكلة الرئيسية: (تأخير مرتفع / تذبذب في الشبكة / ضغط داخلي على الشبكة / ضعف سرعة التحميل / ضعف سرعة الرفع / لا توجد مشكلة واضحة)
 
@@ -93,15 +106,34 @@ Latency Under Load: ${Number(latencyUnderLoad).toFixed(1)} ms
 
     const result = completion.choices[0].message.content;
 
-    res.json({ analysis: result });
+    let contactISP = null;
+
+    if (isp && ispContacts[isp]) {
+      contactISP = {
+        name: isp,
+        phone: ispContacts[isp]
+      };
+    }
+
+    const responsePayload = {
+      analysis: result,
+      contactISP,
+      bufferbloat: {
+        grade: bufferbloatGrade,
+        diff: latencyDifference
+      }
+    };
+
+    console.log("Server response:", responsePayload.bufferbloat);
+
+    res.json(responsePayload);
 
   } catch (err) {
     console.error("AI Error:", err);
 
     if (err.code === "insufficient_quota") {
       return res.json({
-        analysis:
-          "⚠️ خدمة الذكاء الاصطناعي غير متاحة حاليًا بسبب انتهاء الرصيد.",
+        analysis: "⚠️ خدمة الذكاء الاصطناعي غير متاحة حاليًا بسبب انتهاء الرصيد.",
       });
     }
 
@@ -116,8 +148,6 @@ app.use((req, res, next) => {
   next();
 });
 
-
-
 app.post("/api/isp", async (req, res) => {
   try {
     const { ip } = req.body;
@@ -129,7 +159,6 @@ app.post("/api/isp", async (req, res) => {
     const response = await fetch(`https://ipinfo.io/${ip}/json`);
     const data = await response.json();
 
-    // ===== ISP Name Normalization =====
     function normalizeISPName(name) {
       if (!name) return null;
 
@@ -147,7 +176,7 @@ app.post("/api/isp", async (req, res) => {
       if (lower.includes("salem") || lower.includes("solutions"))
         return "STC Solutions";
 
-      return name; // fallback لو شركة غير معروفة
+      return name;
     }
 
     const cleanName = normalizeISPName(data.org);
@@ -157,15 +186,13 @@ app.post("/api/isp", async (req, res) => {
       isp: cleanName,
       city: data.city,
       country: data.country
-    });;
+    });
 
   } catch (err) {
     console.error("ISP Lookup Error:", err);
     res.status(500).json({ error: "ISP lookup failed" });
   }
 });
-
-
 
 const PORT = 3000;
 
