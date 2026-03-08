@@ -1,4 +1,38 @@
 document.addEventListener("DOMContentLoaded", () => {
+
+  navigator.permissions.query({ name: "geolocation" }).then((permission) => {
+
+  if (permission.state === "granted") {
+
+    // المستخدم وافق مسبقاً
+    navigator.geolocation.getCurrentPosition((position) => {
+      detectNearestTowerGPS(position);
+    });
+
+  }
+
+  else if (permission.state === "prompt") {
+
+    // لم يُسأل بعد → اطلب الموقع تلقائياً
+    navigator.geolocation.getCurrentPosition((position) => {
+
+      document.getElementById("locationNotice").style.display = "none";
+
+      detectNearestTowerGPS(position);
+
+    });
+
+  }
+
+  else if (permission.state === "denied") {
+
+    // المستخدم رفض
+    console.log("Location permission denied");
+
+  }
+
+});
+
   const notice = document.getElementById("locationNotice");
   const enableBtn = document.getElementById("enableLocationBtn");
 
@@ -10,12 +44,20 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     navigator.geolocation.getCurrentPosition(
-      () => {
+
+      (position) => {
+
         notice.style.display = "none";
+
+        // تشغيل اكتشاف البرج مباشرة بدون تحديث الصفحة
+        detectNearestTowerGPS(position);
+
       },
+
       () => {
         alert("لم يتم السماح بالوصول للموقع");
       }
+
     );
 
   });
@@ -190,70 +232,38 @@ document.addEventListener("DOMContentLoaded", () => {
 
   loadISPOnPageLoad();
 
-  async function detectNearestTowerGPS() {
+  async function detectNearestTowerGPS(position) {
 
-    if (!navigator.geolocation) {
-      console.log("Geolocation not supported");
-      return;
-    }
+  if (!position) return;
 
-    navigator.geolocation.getCurrentPosition(
+  const lat = position.coords.latitude;
+  const lon = position.coords.longitude;
 
-      async (position) => {
+  try {
 
-        const lat = position.coords.latitude;
-        const lon = position.coords.longitude;
-        const accuracy = position.coords.accuracy;
+    const ispText = document.getElementById("ispInfo")?.textContent || "";
+    const ispName = ispText.split("|")[0]?.trim();
 
-        console.log("📍 GPS Location:");
-        console.log("Latitude:", lat);
-        console.log("Longitude:", lon);
-        console.log("Accuracy:", accuracy, "meters");
-        try {
-
-          const ispText = document.getElementById("ispInfo")?.textContent || "";
-          const ispName = ispText.split("|")[0]?.trim();
-
-
-          const res = await fetch("/api/nearest-tower", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json"
-            },
-
-            body: JSON.stringify({
-              lat,
-              lon,
-              isp: ispName
-            })
-          });
-
-          const data = await res.json();
-          window.towerDistance = data.distance;
-          console.log("📡 Nearest Tower Result:");
-          console.log(data);
-
-        } catch (err) {
-
-          console.error("Tower API error:", err);
-
-        }
-
+    const res = await fetch("/api/nearest-tower", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
       },
+      body: JSON.stringify({
+        lat,
+        lon,
+        isp: ispName
+      })
+    });
 
-      (error) => {
-        console.error("GPS Error:", error);
-      },
+    const data = await res.json();
 
-      {
-        enableHighAccuracy: true,
-        timeout: 5000,
-        maximumAge: 0
-      }
+    window.towerDistance = data.distance;
 
-    );
-
+  } catch (err) {
+    console.error("Tower API error:", err);
   }
+}
 
   // تشغيلها عند تحميل الصفحة
   detectNearestTowerGPS();
@@ -490,6 +500,6 @@ document.addEventListener("DOMContentLoaded", () => {
       showStatus("Test failed ❌");
     }
   }
- 
- window.startSpeedTest = startSpeedTest;
+
+  window.startSpeedTest = startSpeedTest;
 });
