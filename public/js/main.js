@@ -1,9 +1,29 @@
 document.addEventListener("DOMContentLoaded", () => {
+  const notice = document.getElementById("locationNotice");
+  const enableBtn = document.getElementById("enableLocationBtn");
+
+  enableBtn?.addEventListener("click", () => {
+
+    if (!navigator.geolocation) {
+      alert("المتصفح لا يدعم تحديد الموقع");
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      () => {
+        notice.style.display = "none";
+      },
+      () => {
+        alert("لم يتم السماح بالوصول للموقع");
+      }
+    );
+
+  });
 
   const gaugeBox = document.getElementById("gaugeBox");
   const gaugeText = document.getElementById("gaugeText");
   const gaugeCircle = document.getElementById("gaugeProgress");
-  
+
   function enableIdleAnimation() {
     gaugeCircle.style.strokeDasharray = "120 40";
     gaugeCircle.style.strokeDashoffset = "0";
@@ -19,63 +39,63 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   async function playPreSpin() {
-  return new Promise(resolve => {
+    return new Promise(resolve => {
 
-    const circumference = 534;
-    const duration = 600; // مدة الصعود
-    const durationBack = 400; // مدة النزول
+      const circumference = 534;
+      const duration = 600; // مدة الصعود
+      const durationBack = 400; // مدة النزول
 
-    // أوقف أي idle
-    gaugeBox.classList.remove("idle");
+      // أوقف أي idle
+      gaugeBox.classList.remove("idle");
 
-    // أوقف الانتقال المؤقت
-    gaugeCircle.style.transition = "none";
+      // أوقف الانتقال المؤقت
+      gaugeCircle.style.transition = "none";
 
-    let start = null;
+      let start = null;
 
-    // ===== 1️⃣ صعود إلى 100% =====
-    function animateForward(timestamp) {
-      if (!start) start = timestamp;
-      const progress = timestamp - start;
-      const percent = Math.min(progress / duration, 1);
+      // ===== 1️⃣ صعود إلى 100% =====
+      function animateForward(timestamp) {
+        if (!start) start = timestamp;
+        const progress = timestamp - start;
+        const percent = Math.min(progress / duration, 1);
 
-      gaugeCircle.style.strokeDashoffset =
-        circumference * (1 - percent);
+        gaugeCircle.style.strokeDashoffset =
+          circumference * (1 - percent);
 
-      if (percent < 1) {
-        requestAnimationFrame(animateForward);
-      } else {
-        start = null;
-        requestAnimationFrame(animateBackward);
+        if (percent < 1) {
+          requestAnimationFrame(animateForward);
+        } else {
+          start = null;
+          requestAnimationFrame(animateBackward);
+        }
       }
-    }
 
-    // ===== 2️⃣ رجوع إلى 0 =====
-    function animateBackward(timestamp) {
-      if (!start) start = timestamp;
-      const progress = timestamp - start;
-      const percent = Math.min(progress / durationBack, 1);
+      // ===== 2️⃣ رجوع إلى 0 =====
+      function animateBackward(timestamp) {
+        if (!start) start = timestamp;
+        const progress = timestamp - start;
+        const percent = Math.min(progress / durationBack, 1);
 
-      gaugeCircle.style.strokeDashoffset =
-        circumference * percent;
+        gaugeCircle.style.strokeDashoffset =
+          circumference * percent;
 
-      if (percent < 1) {
-        requestAnimationFrame(animateBackward);
-      } else {
+        if (percent < 1) {
+          requestAnimationFrame(animateBackward);
+        } else {
 
-        // إعادة التهيئة للقياس الحقيقي
-        gaugeCircle.style.strokeDashoffset = circumference;
-        gaugeCircle.style.transition =
-          "stroke-dashoffset 0.15s linear";
+          // إعادة التهيئة للقياس الحقيقي
+          gaugeCircle.style.strokeDashoffset = circumference;
+          gaugeCircle.style.transition =
+            "stroke-dashoffset 0.15s linear";
 
-        resolve();
+          resolve();
+        }
       }
-    }
 
-    requestAnimationFrame(animateForward);
+      requestAnimationFrame(animateForward);
 
-  });
-}
+    });
+  }
 
   enableIdleAnimation();
 
@@ -170,6 +190,74 @@ document.addEventListener("DOMContentLoaded", () => {
 
   loadISPOnPageLoad();
 
+  async function detectNearestTowerGPS() {
+
+    if (!navigator.geolocation) {
+      console.log("Geolocation not supported");
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+
+      async (position) => {
+
+        const lat = position.coords.latitude;
+        const lon = position.coords.longitude;
+        const accuracy = position.coords.accuracy;
+
+        console.log("📍 GPS Location:");
+        console.log("Latitude:", lat);
+        console.log("Longitude:", lon);
+        console.log("Accuracy:", accuracy, "meters");
+        try {
+
+          const ispText = document.getElementById("ispInfo")?.textContent || "";
+          const ispName = ispText.split("|")[0]?.trim();
+
+
+          const res = await fetch("/api/nearest-tower", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json"
+            },
+
+            body: JSON.stringify({
+              lat,
+              lon,
+              isp: ispName
+            })
+          });
+
+          const data = await res.json();
+          window.towerDistance = data.distance;
+          console.log("📡 Nearest Tower Result:");
+          console.log(data);
+
+        } catch (err) {
+
+          console.error("Tower API error:", err);
+
+        }
+
+      },
+
+      (error) => {
+        console.error("GPS Error:", error);
+      },
+
+      {
+        enableHighAccuracy: true,
+        timeout: 5000,
+        maximumAge: 0
+      }
+
+    );
+
+  }
+
+  // تشغيلها عند تحميل الصفحة
+  detectNearestTowerGPS();
+
   async function requestAIAnalysis(ping, down, up, jitter, latencyUnderLoad) {
 
     const selectedRadio = document.querySelector(
@@ -183,6 +271,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const ispText = document.getElementById("ispInfo")?.textContent || "";
     const ispName = ispText.split("|")[0]?.trim() || null;
 
+
     const payload = {
       ping,
       jitter,
@@ -190,7 +279,7 @@ document.addEventListener("DOMContentLoaded", () => {
       upload: up,
       latencyUnderLoad,
       connection: connectionType,
-      isp: ispName
+      towerDistance: window.towerDistance || null
     };
 
     showStatus("Analyzing with AI... 🤖");
@@ -202,11 +291,13 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     const data = await res.json();
-    showAIResult(data.analysis, data.contactISP);
+    showAIResult(data.analysis, data.contactISP, data.metrics);
     showStatus("AI Analysis Complete ✅");
   }
 
-  function showAIResult(text, contactISP) {
+
+  function showAIResult(text, contactISP, metrics) {
+
     const box = document.getElementById("resultBox");
     const output = document.getElementById("aiResult");
 
@@ -214,16 +305,49 @@ document.addEventListener("DOMContentLoaded", () => {
     const nameEl = document.getElementById("ispContactName");
     const numberEl = document.getElementById("ispContactNumber");
 
+    const metricsBox = document.getElementById("connectionDetailsComponent");
+
+    document.getElementById("metricTowerDistance").textContent =
+      metrics.towerDistance
+        ? metrics.towerDistance.toFixed(2) + " km"
+        : "N/A";
     if (output) output.textContent = text;
     if (box) box.classList.remove("d-none");
 
+    // ISP Contact
     if (contactISP && contactBox) {
       nameEl.textContent = contactISP.name;
       numberEl.textContent = contactISP.phone;
       contactBox.classList.remove("d-none");
-    } else if (contactBox) {
-      contactBox.classList.add("d-none");
     }
+
+    // Connection Metrics
+    if (metrics && metricsBox) {
+
+      document.getElementById("metricPing").textContent =
+        metrics.ping.toFixed(1) + " ms";
+
+      document.getElementById("metricJitter").textContent =
+        metrics.jitter.toFixed(1) + " ms";
+
+      document.getElementById("metricLoadLatency").textContent =
+        metrics.latencyUnderLoad.toFixed(1) + " ms";
+
+      document.getElementById("metricLatencyRatio").textContent =
+        metrics.latencyRatio.toFixed(2);
+
+      document.getElementById("metricStability").textContent =
+        metrics.stabilityIndex.toFixed(2);
+
+      document.getElementById("metricCongestion").textContent =
+        metrics.congestionScore.toFixed(2);
+
+      document.getElementById("metricBufferbloat").textContent =
+        metrics.bufferbloatGrade;
+
+      metricsBox.classList.remove("d-none");
+    }
+
   }
 
   function showResults(ping, down, up) {
@@ -366,6 +490,6 @@ document.addEventListener("DOMContentLoaded", () => {
       showStatus("Test failed ❌");
     }
   }
-
-  window.startSpeedTest = startSpeedTest;
+ 
+ window.startSpeedTest = startSpeedTest;
 });

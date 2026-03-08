@@ -62,7 +62,7 @@
     </label>
     <div class="mb-3 text-center">
 
-      <div class="connection-wrapper text-center mb-4">
+      <div class=" text-center mb-4">
 
 
         <div class="radio-group">
@@ -209,6 +209,47 @@
             </div>
 
           </div>
+          <!-- Connection Details Component -->
+          <div id="connectionDetailsComponent" class="mt-3 d-none" style="
+background: rgba(255,255,255,0.06);
+border: 1px solid rgba(255,255,255,0.15);
+border-radius: 12px;
+padding: 15px;
+direction: rtl;
+">
+
+            <div style="font-weight:600; margin-bottom:10px; text-align:center;">
+              📊 تفاصيل الاتصال
+            </div>
+
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; font-size:14px;">
+
+              <div>Ping</div>
+              <div id="metricPing" class="metric-value">-</div>
+
+              <div>Jitter</div>
+              <div id="metricJitter" class="metric-value">-</div>
+
+              <div>Latency Under Load</div>
+              <div id="metricLoadLatency" class="metric-value">-</div>
+
+              <div>Latency Ratio</div>
+              <div id="metricLatencyRatio" class="metric-value">-</div>
+
+              <div>Network Stability</div>
+              <div id="metricStability" class="metric-value">-</div>
+
+              <div>Congestion Score</div>
+              <div id="metricCongestion" class="metric-value">-</div>
+
+              <div>Bufferbloat Grade</div>
+              <div id="metricBufferbloat" class="metric-value">-</div>
+
+              <div>Tower Distance</div>
+              <div id="metricTowerDistance" class="metric-value">-</div>
+            </div>
+
+          </div>
         </div>
         <!-- End Card -->
 
@@ -229,6 +270,12 @@
   <!-- ================= JS ================= -->
   <script src="/js/main.js"></script>
 
+
+  <div id="locationNotice" class="location-notice">
+    📍 السماح بالوصول إلى موقعك يساعد في تحديد أقرب برج شبكة
+    وإعطاء تحليل أدق وأفضل لأداء شبكتك.
+    <button id="enableLocationBtn">السماح </button>
+  </div>
 </body>
 
 </html>

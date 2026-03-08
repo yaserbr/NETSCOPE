@@ -128,19 +128,9 @@ body.dashboard-bg {
 }
 
 
-/* ===== CLEAN PRE-SPIN (بدون تعارض) ===== */
 
 
 
-@keyframes boxSpin {
-  from {
-    transform: rotate(0deg);
-  }
-
-  to {
-    transform: rotate(360deg);
-  }
-}
 
 .logo-img {
   height: 90px;
@@ -326,4 +316,36 @@ button:hover {
 .text-muted {
   color: #FFB400 !important;
   opacity: 0.85;
+}
+/* ===== CONNECTION METRICS ===== */
+
+.metric-value{
+  font-weight:700;
+}
+.location-notice{
+  position:fixed;
+  display: flex;
+  bottom:25px;
+  left:50%;
+  transform:translateX(-50%);
+  background:#1A1A2E;
+  color:#fff;
+  padding: 10px;
+  border-radius:12px;
+  border:1px solid #FFB400;
+  box-shadow:0 10px 30px rgba(0,0,0,0.4);
+  z-index:9999;
+  font-size:14px;
+  align-items: center;
+}
+
+.location-notice button{
+  margin-left:10px;
+  background:#FFB400;
+  border:none;
+  padding:6px 12px;
+  margin: 10px;
+  border-radius:6px;
+  font-weight:600;
+  cursor:pointer;
 }

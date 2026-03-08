@@ -16,8 +16,8 @@ const openai = new OpenAI({
 
 app.post("/api/analyze-ai", async (req, res) => {
   try {
-    const { ping, jitter, download, upload, latencyUnderLoad, connection, isp } = req.body;
 
+const { ping, jitter, download, upload, latencyUnderLoad, connection, isp, towerDistance } = req.body;
     if (
       ping === undefined ||
       jitter === undefined ||
@@ -31,16 +31,48 @@ app.post("/api/analyze-ai", async (req, res) => {
       });
     }
 
-    console.log("Received from client:", req.body);
+    // ================= CALCULATIONS =================
 
-    // ===== Bufferbloat Calculation (داخلي فقط) =====
     const latencyDifference = Number(latencyUnderLoad) - Number(ping);
 
+    const latencyRatio =
+      Number(ping) > 0 ? Number(latencyUnderLoad) / Number(ping) : 0;
+
+    const stabilityIndex =
+      Number(download) / (Number(jitter) + 1);
+
+    const congestionScore =
+      Number(ping) > 0 ? latencyDifference / Number(ping) : 0;
+
+    // ================= BUFFERBLOAT =================
+
     let bufferbloatGrade;
+
     if (latencyDifference <= 5) bufferbloatGrade = "A";
     else if (latencyDifference <= 20) bufferbloatGrade = "B";
     else if (latencyDifference <= 50) bufferbloatGrade = "C";
     else bufferbloatGrade = "D";
+
+    // ================= DEBUG LOG =================
+
+    const aiVariables = {
+      connection,
+      ping,
+      jitter,
+      download,
+      upload,
+      latencyUnderLoad,
+      latencyDifference,
+      latencyRatio,
+      stabilityIndex,
+      congestionScore,
+      bufferbloatGrade
+    };
+
+    console.log("\n===== NETSCOPE AI INPUT =====");
+    console.table(aiVariables);
+
+    // ================= AI PROMPT =================
 
     const prompt = `نتائج فحص الشبكة:
 
@@ -52,51 +84,132 @@ Upload: ${Number(upload).toFixed(1)} Mbps
 Latency Under Load: ${Number(latencyUnderLoad).toFixed(1)} ms
 Bufferbloat Grade: ${bufferbloatGrade}
 Latency Increase: ${latencyDifference.toFixed(1)} ms
+Latency Ratio: ${latencyRatio.toFixed(2)}
+Network Stability: ${stabilityIndex.toFixed(2)}
+Congestion Score: ${congestionScore.toFixed(2)}
+المسافة التقريبية بين المستخدم والبرج: ${Number(towerDistance).toFixed(2)} km
 
-قم بتحليل احترافي دقيق ومتوازن.
 
-مهم جدًا:
-- قارن جميع المؤشرات ببعضها قبل تحديد المشكلة الرئيسية.
-- لا تعتبر أي قيمة مشكلة إذا كانت ضمن النطاق الطبيعي.
-- لا تستخدم مصطلحات تقنية معقدة في النتيجة.
-- استخدم وصفًا مفهومًا للمستخدم العادي.
+مهم جداً:
+قم بتحليل جودة الشبكة بشكل احترافي ومنطقي.
+لا تعتمد على مؤشر واحد فقط.
+قارن جميع المؤشرات مع بعضها قبل تحديد المشكلة.
+
+
+القيم المرجعية التقريبية:
+
+Ping
+0-30 ms ممتاز
+30-60 ms جيد
+60-100 ms مرتفع
+أكثر من 100 ms سيء
+
+Jitter
+0-5 ms ممتاز
+5-15 ms متوسط
+أكثر من 15 ms غير مستقر
+
+Latency Increase
+أقل من 30 ms طبيعي
+30-70 ms ضغط متوسط
+أكثر من 70 ms ضغط مرتفع
+
+Latency Ratio
+أقل من 2 طبيعي
+2-4 ضغط متوسط
+أكثر من 4 ضغط مرتفع
+
+Network Stability
+أقل من 0.15 مستقر
+0.15-0.35 متوسط
+أكثر من 0.35 غير مستقر
+
+
+منطق التحليل:
+
+1️⃣ إذا كان Ping مرتفع أساساً والفرق بين Ping و Latency Under Load صغير  
+فالمشكلة غالباً خارج الشبكة المحلية (مزود الخدمة أو المسار أو السيرفر).
+
+2️⃣ إذا كان Ping طبيعي لكن Latency Under Load يرتفع كثيراً  
+فهذا يدل غالباً على Bufferbloat أو ضغط في الشبكة.
+
+3️⃣ إذا كان Jitter مرتفع مع عدم استقرار  
+فهذا يدل على تذبذب الاتصال أو تداخل الإشارة.
+
+4️⃣ إذا كانت السرعة منخفضة بينما Ping و Jitter طبيعيين  
+فقد تكون المشكلة من الخادم أو من مزود الخدمة.
+
+5️⃣ إذا كان Congestion Score مرتفع  
+فغالباً الشبكة الداخلية مزدحمة بسبب أجهزة أخرى.
+
+
+تحليل المسافة عن البرج:
+
+إذا كانت المسافة عن البرج أكبر من 2 كم  
+فقد يؤدي ذلك إلى ضعف الإشارة أو انخفاض السرعة.
+
+إذا كانت المسافة أقل من 1 كم  
+فغالباً المسافة ليست سبب المشكلة.
+
+
+تحديد موقع المشكلة (Root Cause):
+
+اختر موقعاً واحداً فقط هو الأكثر احتمالاً:
+
+مزود الخدمة
+السيرفر
+المودم
+الواي فاي
+المسافة عن الراوتر
+ضغط الشبكة
+البرج
+لا توجد مشكلة
+
 
 خذ بعين الاعتبار نوع الاتصال:
 
-إذا WiFi:
-- ركز على التداخل أو المسافة أو ضغط الشبكة الداخلية.
+إذا WiFi
+ركز على التداخل بين الشبكات أو المسافة عن الراوتر أو ضغط الشبكة.
 
-إذا Ethernet:
-- استبعد مشاكل الإشارة.
-- ركز على مزود الخدمة أو السيرفر عند وجود تأخير.
+إذا Ethernet
+استبعد مشاكل الإشارة وركز على مزود الخدمة أو السيرفر.
 
-إذا Cellular:
-- ركز على ازدحام البرج أو ضعف التغطية أو تغير الإشارة.
+إذا Cellular
+ركز على ازدحام البرج أو ضعف التغطية أو بعد المستخدم عن البرج.
+
+
 
 اكتب النتيجة بهذا التنسيق فقط:
 
+
 التقييم العام: (ممتاز / جيد جدا / متوسط / ضعيف)
 
-المشكلة الرئيسية: (تأخير مرتفع / تذبذب في الشبكة / ضغط داخلي على الشبكة / ضعف سرعة التحميل / ضعف سرعة الرفع / لا توجد مشكلة واضحة)
+المشكلة الرئيسية: (وصف مختصر للمشكلة)
 
-الموقع المحتمل: (واحد فقط من:
-مزود الخدمة - السيرفر - المودم - الواي فاي - المسافة عن الراوتر - ضغط الشبكة - البرج - لا توجد مشكلة)
+الموقع المحتمل: (اختر خيار واحد فقط)
 
 الأسباب المحتملة:
-- سبب مختصر مباشر
-- سبب مختصر مباشر
-- سبب مختصر مباشر
+- سبب مختصر
+- سبب مختصر
+- سبب مختصر
+- سبب مختصر
 
 الحلول المقترحة:
 - حل عملي واضح
 - حل عملي واضح
 - حل عملي واضح
+- حل عملي واضح
+
 
 الشروط:
-- لا تكتب شرح إضافي
-- لا تبالغ في التشخيص
-- كل سطر قصير وواضح
-- لغة عربية بسيطة مباشرة`;
+
+لا تكتب أي نص خارج التنسيق المطلوب.
+استخدم لغة عربية بسيطة يفهمها المستخدم العادي.
+كل سطر يجب أن يكون مختصر وواضح.
+لا تستخدم مصطلحات تقنية معقدة.
+`;
+
+    // ================= OPENAI =================
 
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
@@ -105,6 +218,8 @@ Latency Increase: ${latencyDifference.toFixed(1)} ms
     });
 
     const result = completion.choices[0].message.content;
+
+    // ================= ISP CONTACT =================
 
     let contactISP = null;
 
@@ -118,17 +233,29 @@ Latency Increase: ${latencyDifference.toFixed(1)} ms
     const responsePayload = {
       analysis: result,
       contactISP,
-      bufferbloat: {
-        grade: bufferbloatGrade,
-        diff: latencyDifference
+
+      metrics: {
+        ping,
+        jitter,
+        download,
+        upload,
+        latencyUnderLoad,
+        latencyDifference,
+        latencyRatio,
+        stabilityIndex,
+        congestionScore,
+        bufferbloatGrade,
+        towerDistance
       }
     };
 
-    console.log("Server response:", responsePayload.bufferbloat);
+    console.log("\n===== SERVER RESPONSE =====");
+    console.log(responsePayload);
 
     res.json(responsePayload);
 
   } catch (err) {
+
     console.error("AI Error:", err);
 
     if (err.code === "insufficient_quota") {
@@ -143,13 +270,121 @@ Latency Increase: ${latencyDifference.toFixed(1)} ms
   }
 });
 
+// ================= KEEP ALIVE =================
+
 app.use((req, res, next) => {
   res.set("Connection", "keep-alive");
   next();
 });
 
+// ================= NEAREST TOWER =================
+// ================= NEAREST TOWER =================
+
+function getDistance(lat1, lon1, lat2, lon2) {
+
+  const R = 6371;
+
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * Math.PI / 180) *
+    Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+  return R * c;
+}
+
+app.post("/api/nearest-tower", async (req, res) => {
+  try {
+
+    const lat = Number(req.body.lat);
+    const lon = Number(req.body.lon);
+    const isp = req.body.isp;
+
+    if (!lat || !lon) {
+      return res.json({ error: "Missing coordinates" });
+    }
+
+    const apiKey = process.env.OPENCELL_API_KEY;
+
+    const operatorMap = {
+      STC: 1,
+      Mobily: 3,
+      Zain: 4
+    };
+
+    const targetMNC = operatorMap[isp];
+
+    // إنشاء BBOX حول المستخدم
+    const offset = 0.005;
+
+    const latMin = lat - offset;
+    const latMax = lat + offset;
+    const lonMin = lon - offset;
+    const lonMax = lon + offset;
+
+    const url = `https://opencellid.org/cell/getInArea?key=${apiKey}&BBOX=${latMin},${lonMin},${latMax},${lonMax}&format=json`;
+
+    const response = await fetch(url);
+    const data = await response.json();
+
+    if (!data || !data.cells) {
+      return res.json({ error: "No towers found" });
+    }
+
+    // فلترة الأبراج حسب المشغل
+    let towers = data.cells;
+
+    if (targetMNC) {
+      towers = data.cells.filter(tower => tower.mnc === targetMNC);
+
+      console.log("Filtering towers for operator:", isp);
+      console.log("Filtered towers:", towers.length);
+    }
+
+    let nearestTower = null;
+    let minDistance = Infinity;
+
+    towers.forEach(tower => {
+
+      const distance = getDistance(
+        lat,
+        lon,
+        tower.lat,
+        tower.lon
+      );
+
+      if (distance < minDistance) {
+
+        minDistance = distance;
+        nearestTower = tower;
+
+      }
+
+    });
+
+    res.json({
+      nearestTower,
+      distance: minDistance
+    });
+
+  } catch (err) {
+
+    console.error("Tower API Error:", err);
+    res.status(500).json({ error: "Tower lookup failed" });
+
+  }
+});
+
+// ================= ISP LOOKUP =================
+
 app.post("/api/isp", async (req, res) => {
   try {
+
     const { ip } = req.body;
 
     if (!ip) {
@@ -160,6 +395,7 @@ app.post("/api/isp", async (req, res) => {
     const data = await response.json();
 
     function normalizeISPName(name) {
+
       if (!name) return null;
 
       const lower = name.toLowerCase();
@@ -189,8 +425,10 @@ app.post("/api/isp", async (req, res) => {
     });
 
   } catch (err) {
+
     console.error("ISP Lookup Error:", err);
     res.status(500).json({ error: "ISP lookup failed" });
+
   }
 });
 
