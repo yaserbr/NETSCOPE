@@ -159,6 +159,7 @@ document.addEventListener("DOMContentLoaded", () => {
   let lastDown = 0;
   let lastUp = 0;
   let latencyUnderLoad = 0;
+  window.towerDistance = null;
 
   function showStatus(msg) {
     const el = document.getElementById("statusText");
@@ -382,7 +383,6 @@ document.addEventListener("DOMContentLoaded", () => {
 }
 
   // تشغيلها عند تحميل الصفحة
-  detectNearestTowerGPS();
 
   async function requestAIAnalysis(ping, down, up, jitter, latencyUnderLoad) {
 
