@@ -1,65 +1,53 @@
 document.addEventListener("DOMContentLoaded", () => {
-
-  navigator.permissions.query({ name: "geolocation" }).then((permission) => {
-
-  if (permission.state === "granted") {
-
-    // المستخدم وافق مسبقاً
-    navigator.geolocation.getCurrentPosition((position) => {
-      detectNearestTowerGPS(position);
-    });
-
-  }
-
-  else if (permission.state === "prompt") {
-
-    // لم يُسأل بعد → اطلب الموقع تلقائياً
-    navigator.geolocation.getCurrentPosition((position) => {
-
-      document.getElementById("locationNotice").style.display = "none";
-
-      detectNearestTowerGPS(position);
-
-    });
-
-  }
-
-  else if (permission.state === "denied") {
-
-    // المستخدم رفض
-    console.log("Location permission denied");
-
-  }
-
-});
-
   const notice = document.getElementById("locationNotice");
   const enableBtn = document.getElementById("enableLocationBtn");
 
-  enableBtn?.addEventListener("click", () => {
+  const setLocationNoticeVisible = (visible) => {
+    if (!notice) return;
+    notice.style.display = visible ? "flex" : "none";
+  };
 
+  if (!navigator.geolocation) {
+    setLocationNoticeVisible(true);
+  } else {
+    setLocationNoticeVisible(false);
+    navigator.permissions
+      .query({ name: "geolocation" })
+      .then((permission) => {
+        if (permission.state === "granted" || permission.state === "prompt") {
+          navigator.geolocation.getCurrentPosition(
+            (position) => {
+              setLocationNoticeVisible(false);
+              detectNearestTowerGPS(position);
+            },
+            () => {
+              setLocationNoticeVisible(true);
+            }
+          );
+        } else {
+          setLocationNoticeVisible(true);
+        }
+      })
+      .catch(() => {
+        setLocationNoticeVisible(true);
+      });
+  }
+
+  enableBtn?.addEventListener("click", () => {
     if (!navigator.geolocation) {
-      alert("المتصفح لا يدعم تحديد الموقع");
+      setLocationNoticeVisible(true);
       return;
     }
 
     navigator.geolocation.getCurrentPosition(
-
       (position) => {
-
-        notice.style.display = "none";
-
-        // تشغيل اكتشاف البرج مباشرة بدون تحديث الصفحة
+        setLocationNoticeVisible(false);
         detectNearestTowerGPS(position);
-
       },
-
       () => {
-        alert("لم يتم السماح بالوصول للموقع");
+        setLocationNoticeVisible(true);
       }
-
     );
-
   });
 
   const gaugeBox = document.getElementById("gaugeBox");
@@ -151,6 +139,87 @@ document.addEventListener("DOMContentLoaded", () => {
   function showStatus(msg) {
     const el = document.getElementById("statusText");
     if (el) el.textContent = msg;
+  }
+
+  function evaluateMetric(value, type) {
+    const raw = String(value).trim();
+    const num = Number(raw);
+
+    if (type === "ping") {
+      if (num < 20) return { label: "Good", className: "good" };
+      if (num <= 50) return { label: "Warning", className: "warning" };
+      return { label: "Bad", className: "bad" };
+    }
+
+    if (type === "jitter") {
+      if (num <= 10) return { label: "Good", className: "good" };
+      if (num <= 20) return { label: "Warning", className: "warning" };
+      return { label: "Bad", className: "bad" };
+    }
+
+    if (type === "latencyUnderLoad") {
+      if (num <= 40) return { label: "Good", className: "good" };
+      if (num <= 80) return { label: "Warning", className: "warning" };
+      return { label: "Bad", className: "bad" };
+    }
+
+    if (type === "latencyRatio") {
+      if (num < 2) return { label: "Good", className: "good" };
+      if (num <= 3) return { label: "Warning", className: "warning" };
+      return { label: "Bad", className: "bad" };
+    }
+
+    if (type === "networkStability") {
+      if (num > 80) return { label: "Good", className: "good" };
+      if (num >= 60) return { label: "Warning", className: "warning" };
+      return { label: "Bad", className: "bad" };
+    }
+
+    if (type === "congestionScore") {
+      if (num <= 40) return { label: "Good", className: "good" };
+      if (num <= 70) return { label: "Warning", className: "warning" };
+      return { label: "Bad", className: "bad" };
+    }
+
+    if (type === "bufferbloatGrade") {
+      if (/^[AB]$/i.test(raw)) return { label: "Good", className: "good" };
+      if (/^C$/i.test(raw)) return { label: "Warning", className: "warning" };
+      if (/^[DF]$/i.test(raw)) return { label: "Bad", className: "bad" };
+      return { label: "N/A", className: "warning" };
+    }
+
+    if (type === "towerDistance") {
+      if (!raw || isNaN(num)) return { label: "N/A", className: "warning" };
+      if (num < 1) return { label: "Good", className: "good" };
+      if (num <= 3) return { label: "Warning", className: "warning" };
+      return { label: "Bad", className: "bad" };
+    }
+
+    return { label: "N/A", className: "warning" };
+  }
+
+  function calculateNetworkStability(ping, jitter, latencyUnderLoad) {
+    const p = Number(ping) || 0;
+    const j = Number(jitter) || 0;
+    const l = Number(latencyUnderLoad) || 0;
+    const jitterFactor = Math.max(0, 1 - j / 40);
+    const latencyDiff = Math.abs(l - p);
+    const latencyFactor = Math.max(0, 1 - latencyDiff / 80);
+    const stability = (jitterFactor * 0.55 + latencyFactor * 0.45) * 100;
+    return Math.round(Math.min(100, Math.max(0, stability)));
+  }
+
+  function updateMetric(id, type, rawValue, formattedValue) {
+    const valueEl = document.getElementById(`${id}Value`);
+    const statusEl = document.getElementById(`${id}Status`);
+    if (!valueEl || !statusEl) return;
+
+    valueEl.textContent = formattedValue;
+    const evaluation = evaluateMetric(rawValue, type);
+    valueEl.classList.remove("good", "warning", "bad");
+    valueEl.classList.add(evaluation.className);
+    statusEl.textContent = "";
+    statusEl.className = "status";
   }
 
   function updateGauge(speed) {
@@ -334,28 +403,25 @@ document.addEventListener("DOMContentLoaded", () => {
     // Connection Metrics
     if (metrics && metricsBox) {
 
-      document.getElementById("metricPing").textContent =
-        metrics.ping.toFixed(1) + " ms";
-
-      document.getElementById("metricJitter").textContent =
-        metrics.jitter.toFixed(1) + " ms";
-
-      document.getElementById("metricLoadLatency").textContent =
-        metrics.latencyUnderLoad.toFixed(1) + " ms";
-
-      document.getElementById("metricLatencyRatio").textContent =
-        metrics.latencyRatio.toFixed(2);
-
-      document.getElementById("metricStability").textContent =
-        metrics.stabilityIndex.toFixed(2);
-
-      document.getElementById("metricCongestion").textContent =
-        metrics.congestionScore.toFixed(2);
-
-      document.getElementById("metricBufferbloat").textContent =
-        metrics.bufferbloatGrade;
+      updateMetric("metricPing", "ping", metrics.ping, metrics.ping.toFixed(1) + " ms");
+      updateMetric("metricJitter", "jitter", metrics.jitter, metrics.jitter.toFixed(1) + " ms");
+      updateMetric("metricLoadLatency", "latencyUnderLoad", metrics.latencyUnderLoad, metrics.latencyUnderLoad.toFixed(1) + " ms");
+      updateMetric("metricLatencyRatio", "latencyRatio", metrics.latencyRatio, metrics.latencyRatio.toFixed(2));
+      const stabilityPercent = calculateNetworkStability(metrics.ping, metrics.jitter, metrics.latencyUnderLoad);
+      updateMetric("metricStability", "networkStability", stabilityPercent, stabilityPercent.toFixed(0) + "%");
+      const congestionPercent = Math.round((Number(metrics.congestionScore) / 5) * 100);
+      updateMetric("metricCongestion", "congestionScore", congestionPercent, congestionPercent.toFixed(0) + "%");
+      updateMetric("metricBufferbloat", "bufferbloatGrade", metrics.bufferbloatGrade, metrics.bufferbloatGrade);
+      updateMetric(
+        "metricTowerDistance",
+        "towerDistance",
+        metrics.towerDistance,
+        metrics.towerDistance ? metrics.towerDistance.toFixed(2) + " km" : "N/A"
+      );
 
       metricsBox.classList.remove("d-none");
+    } else if (metricsBox) {
+      metricsBox.classList.add("d-none");
     }
 
   }

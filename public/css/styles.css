@@ -93,6 +93,26 @@ body.dashboard-bg {
   }
 }
 
+.status {
+  display: none;
+}
+
+#connectionDetailsComponent span.good {
+  color: #4caf50;
+}
+
+#connectionDetailsComponent span.warning {
+  color: #ff9800;
+}
+
+.warning {
+  color: #ff9800;
+}
+
+.bad {
+  color: #f44336;
+}
+
 /* HEADER */
 .main-header {
   position: relative;

@@ -15,7 +15,6 @@
 
 <body class="dashboard-bg">
 
-  <!-- Background -->
   <div class="gradient-bg22"></div>
 
   <div class="shapes">
@@ -24,8 +23,6 @@
     <span class="shape s3"></span>
     <span class="shape s4"></span>
   </div>
-
-  <!-- ================= HEADER ================= -->
 
   <header class="main-header">
     <div class="header-wrap">
@@ -36,17 +33,13 @@
       </div>
 
       <div class="header-right">
-
         <div class="logo-box">
           <img src="/images/logo.png" alt="NETSCOPE Logo" class="logo-img">
         </div>
-
       </div>
 
     </div>
   </header>
-
-  <!-- ================= HERO ================= -->
 
   <section class="container text-center py-5">
 
@@ -57,13 +50,11 @@
     <p class="text-muted mb-4">
       Measure performance, detect problems, and optimize your connection
     </p>
-    <label class="connection-label">
-      نوع الاتصال
-    </label>
+
+    <label class="connection-label">نوع الاتصال</label>
+
     <div class="mb-3 text-center">
-
-      <div class=" text-center mb-4">
-
+      <div class="text-center mb-4">
 
         <div class="radio-group">
 
@@ -88,13 +79,11 @@
         </div>
 
       </div>
-
     </div>
+
     <button onclick="startSpeedTest()">Start Now</button>
 
   </section>
-
-  <!-- ================= MAIN ================= -->
 
   <main class="container pb-5">
 
@@ -102,37 +91,26 @@
 
       <div class="col-lg-6 col-md-8 col-sm-12">
 
-        <!-- Speed Card -->
         <div class="glass-card p-4 mt-4">
 
-          <!-- Gauge -->
           <div class="text-center mb-4">
 
             <div class="speed-gauge" id="gaugeBox">
 
               <svg viewBox="0 0 200 200">
-
-                <!-- Background Circle -->
                 <circle cx="100" cy="100" r="85" class="gauge-bg" />
-
-                <!-- Progress Circle -->
                 <circle cx="100" cy="100" r="85" class="gauge-progress" id="gaugeProgress" />
-
               </svg>
 
-              <!-- Speed Text -->
               <div class="gauge-center">
-
                 <span id="gaugeText">0</span>
                 <small>Mbps</small>
-
               </div>
 
             </div>
 
           </div>
 
-          <!-- Speed Info -->
           <div class="row text-center mb-3">
 
             <div class="col-4">
@@ -156,22 +134,17 @@
                 <small id="ispInfo">Detecting...</small>
               </div>
             </div>
+
           </div>
 
-          <!-- Status -->
           <div class="text-center mb-3">
             <h2>
               <p id="statusText" class="fw-semibold"></p>
             </h2>
           </div>
 
-          <!-- ================= AI RESULT ================= -->
-
           <div id="resultBox" class="mt-4 d-none">
-
-            <h4 class="text-center mb-3">
-              🔍 AI Network Diagnosis
-            </h4>
+            <h4 class="text-center mb-3">🔍 AI Network Diagnosis</h4>
 
             <div id="aiResult" class="text-center" style="
     background: rgba(255,255,255,0.08);
@@ -182,21 +155,18 @@
     text-align: center;
     font-family: 'Cairo', sans-serif;
     padding: 15px;
-    border-radius: 12px;
-  ">
+    border-radius: 12px;">
               Waiting for analysis...
             </div>
-
           </div>
-          <!-- ISP Contact Component -->
+
           <div id="ispContactComponent" class="mt-3 d-none" style="
   background: rgba(255,180,0,0.12);
   border: 1px solid rgba(255,180,0,0.3);
   border-radius: 12px;
   padding: 15px;
   text-align: center;
-  direction: rtl;
-">
+  direction: rtl;">
 
             <div style="font-weight:600; margin-bottom:6px;">
               📞 تواصل مع مزود الخدمة
@@ -209,7 +179,8 @@
             </div>
 
           </div>
-          <!-- Connection Details Component -->
+
+          <!-- ✅ التعديل هنا فقط -->
           <div id="connectionDetailsComponent" class="mt-3 d-none" style="
 background: rgba(255,255,255,0.06);
 border: 1px solid rgba(255,255,255,0.15);
@@ -222,36 +193,45 @@ direction: rtl;
               📊 تفاصيل الاتصال
             </div>
 
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; font-size:14px;">
+            <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:6px; font-size:14px; text-align:center;">
 
               <div>Ping</div>
-              <div id="metricPing" class="metric-value">-</div>
+              <div id="metricPing"><span id="metricPingValue">-</span> <span id="metricPingStatus" class="status"></span></div>
+              <div>0-20 ms</div>
 
               <div>Jitter</div>
-              <div id="metricJitter" class="metric-value">-</div>
+              <div id="metricJitter"><span id="metricJitterValue">-</span> <span id="metricJitterStatus" class="status"></span></div>
+              <div>0-10 ms</div>
 
               <div>Latency Under Load</div>
-              <div id="metricLoadLatency" class="metric-value">-</div>
+              <div id="metricLoadLatency"><span id="metricLoadLatencyValue">-</span> <span id="metricLoadLatencyStatus" class="status"></span></div>
+              <div>0-40 ms</div>
 
               <div>Latency Ratio</div>
-              <div id="metricLatencyRatio" class="metric-value">-</div>
+              <div id="metricLatencyRatio"><span id="metricLatencyRatioValue">-</span> <span id="metricLatencyRatioStatus" class="status"></span></div>
+              <div>0-2</div>
 
               <div>Network Stability</div>
-              <div id="metricStability" class="metric-value">-</div>
+              <div id="metricStability"><span id="metricStabilityValue">-</span> <span id="metricStabilityStatus" class="status"></span></div>
+              <div>80-100%</div>
 
               <div>Congestion Score</div>
-              <div id="metricCongestion" class="metric-value">-</div>
+              <div id="metricCongestion"><span id="metricCongestionValue">-</span> <span id="metricCongestionStatus" class="status"></span></div>
+              <div>0-100%</div>
 
               <div>Bufferbloat Grade</div>
-              <div id="metricBufferbloat" class="metric-value">-</div>
+              <div id="metricBufferbloat"><span id="metricBufferbloatValue">-</span> <span id="metricBufferbloatStatus" class="status"></span></div>
+              <div>A-B</div>
 
               <div>Tower Distance</div>
-              <div id="metricTowerDistance" class="metric-value">-</div>
+              <div id="metricTowerDistance"><span id="metricTowerDistanceValue">-</span> <span id="metricTowerDistanceStatus" class="status"></span></div>
+              <div>0-1 km</div>
+
             </div>
 
           </div>
+
         </div>
-        <!-- End Card -->
 
       </div>
 
@@ -259,23 +239,17 @@ direction: rtl;
 
   </main>
 
-  <!-- ================= FOOTER ================= -->
-
   <footer class="text-center pb-4 small text-muted">
-
     © 2026 NETSCOPE • Network Analyzer
-
   </footer>
 
-  <!-- ================= JS ================= -->
   <script src="/js/main.js"></script>
-
 
   <div id="locationNotice" class="location-notice">
     📍 السماح بالوصول إلى موقعك يساعد في تحديد أقرب برج شبكة
     وإعطاء تحليل أدق وأفضل لأداء شبكتك.
     <button id="enableLocationBtn">السماح </button>
   </div>
-</body>
 
+</body>
 </html>
