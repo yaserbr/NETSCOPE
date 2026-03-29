@@ -53,6 +53,30 @@ document.addEventListener("DOMContentLoaded", () => {
   const gaugeBox = document.getElementById("gaugeBox");
   const gaugeText = document.getElementById("gaugeText");
   const gaugeCircle = document.getElementById("gaugeProgress");
+  const startButton = document.querySelector('button[onclick="startSpeedTest()"]');
+  const originalStartText = startButton ? startButton.textContent.trim() : "Start Now";
+
+  function setStartButtonLoading(loading) {
+    if (!startButton) return;
+    startButton.disabled = loading;
+    startButton.textContent = loading ? "Testing..." : originalStartText;
+  }
+
+  function setGaugePhase(phase) {
+    if (!gaugeBox) return;
+    gaugeBox.classList.remove("phase-ping", "phase-download", "phase-upload");
+    if (phase) gaugeBox.classList.add(phase);
+  }
+
+  function activateGaugeLoading() {
+    if (!gaugeBox) return;
+    gaugeBox.classList.add("loading");
+  }
+
+  function deactivateGaugeLoading() {
+    if (!gaugeBox) return;
+    gaugeBox.classList.remove("loading", "phase-ping", "phase-download", "phase-upload");
+  }
 
   function enableIdleAnimation() {
     gaugeCircle.style.strokeDasharray = "120 40";
@@ -138,7 +162,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function showStatus(msg) {
     const el = document.getElementById("statusText");
-    if (el) el.textContent = msg;
+    if (!el) return;
+    if (el._statusFadeTimer) clearTimeout(el._statusFadeTimer);
+    el.classList.add("status-fade");
+    el._statusFadeTimer = setTimeout(() => {
+      el.textContent = msg;
+      el.classList.remove("status-fade");
+      el._statusFadeTimer = null;
+    }, 140);
   }
 
   function evaluateMetric(value, type) {
@@ -176,8 +207,8 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     if (type === "congestionScore") {
-      if (num <= 40) return { label: "Good", className: "good" };
-      if (num <= 70) return { label: "Warning", className: "warning" };
+      if (num <= 20) return { label: "Good", className: "good" };
+      if (num <= 50) return { label: "Warning", className: "warning" };
       return { label: "Bad", className: "bad" };
     }
 
@@ -216,8 +247,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
     valueEl.textContent = formattedValue;
     const evaluation = evaluateMetric(rawValue, type);
-    valueEl.classList.remove("good", "warning", "bad");
-    valueEl.classList.add(evaluation.className);
+    valueEl.classList.remove("good", "warning", "bad", "value-good", "value-medium", "value-bad");
+    const valueClass = evaluation.className === "good"
+      ? "value-good"
+      : evaluation.className === "warning"
+      ? "value-medium"
+      : "value-bad";
+    valueEl.classList.add(valueClass);
     statusEl.textContent = "";
     statusEl.className = "status";
   }
@@ -235,6 +271,17 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const hue = Math.min(120, percent * 120);
     gaugeCircle.style.stroke = `hsl(${hue},100%,50%)`;
+
+    if (gaugeBox) {
+      gaugeBox.classList.remove("speed-low", "speed-med", "speed-high");
+      if (percent >= 0.65) {
+        gaugeBox.classList.add("speed-high");
+      } else if (percent >= 0.25) {
+        gaugeBox.classList.add("speed-med");
+      } else {
+        gaugeBox.classList.add("speed-low");
+      }
+    }
   }
 
   function resetGaugeSmooth() {
@@ -361,7 +408,7 @@ document.addEventListener("DOMContentLoaded", () => {
       towerDistance: window.towerDistance || null
     };
 
-    showStatus("Analyzing with AI... 🤖");
+    showStatus("Analyzing results...");
 
     const res = await fetch("/api/analyze-ai", {
       method: "POST",
@@ -374,6 +421,26 @@ document.addEventListener("DOMContentLoaded", () => {
     showStatus("AI Analysis Complete ✅");
   }
 
+
+  function typeAiResultText(element, text) {
+    if (!element) return;
+    if (element.__typingTimer) clearTimeout(element.__typingTimer);
+
+    element.textContent = "";
+    let index = 0;
+
+    function tick() {
+      if (index >= text.length) {
+        element.__typingTimer = null;
+        return;
+      }
+      element.textContent += text[index++];
+      const delay = 12 + (index % 8 === 0 ? 10 : 0);
+      element.__typingTimer = setTimeout(tick, delay);
+    }
+
+    tick();
+  }
 
   function showAIResult(text, contactISP, metrics) {
 
@@ -390,8 +457,11 @@ document.addEventListener("DOMContentLoaded", () => {
       metrics.towerDistance
         ? metrics.towerDistance.toFixed(2) + " km"
         : "N/A";
-    if (output) output.textContent = text;
-    if (box) box.classList.remove("d-none");
+    if (output) typeAiResultText(output, text);
+    if (box) {
+      box.classList.remove("d-none");
+      requestAnimationFrame(() => box.classList.add("result-visible"));
+    }
 
     // ISP Contact
     if (contactISP && contactBox) {
@@ -426,10 +496,30 @@ document.addEventListener("DOMContentLoaded", () => {
 
   }
 
+  function animateValue(id, target, decimals = 0) {
+    const el = document.getElementById(id);
+    if (!el) return;
+
+    const start = parseFloat(el.textContent) || 0;
+    const end = Number(target) || 0;
+    const duration = 420;
+    const startTime = performance.now();
+
+    function frame(now) {
+      const progress = Math.min((now - startTime) / duration, 1);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      const value = start + (end - start) * eased;
+      el.textContent = decimals === 0 ? Math.round(value) : value.toFixed(decimals);
+      if (progress < 1) requestAnimationFrame(frame);
+    }
+
+    requestAnimationFrame(frame);
+  }
+
   function showResults(ping, down, up) {
-    document.getElementById("pingValue").textContent = ping.toFixed(0);
-    document.getElementById("downloadValue").textContent = down.toFixed(1);
-    document.getElementById("uploadValue").textContent = up.toFixed(1);
+    animateValue("pingValue", ping, 0);
+    animateValue("downloadValue", down, 1);
+    animateValue("uploadValue", up, 1);
   }
 
   async function measurePingAndJitter() {
@@ -456,29 +546,39 @@ document.addEventListener("DOMContentLoaded", () => {
 
   async function startSpeedTest() {
 
+    activateGaugeLoading();
+    setGaugePhase("phase-ping");
+    showStatus("Measuring latency...");
     disableIdleAnimation();
     await playPreSpin();
 
 
     // ===== مسح التحليل ورقم التواصل عند إعادة الاختبار =====
     const output = document.getElementById("aiResult");
+    const resultBox = document.getElementById("resultBox");
     const contactBox = document.getElementById("ispContactComponent");
 
     if (output) output.textContent = "Waiting for analysis...";
+    if (resultBox) {
+      resultBox.classList.add("d-none");
+      resultBox.classList.remove("result-visible");
+    }
     if (contactBox) contactBox.classList.add("d-none");
 
-    showStatus("Testing... ⏳");
     // إعادة ضبط كاملة قبل القياس
     gaugeCircle.style.strokeDasharray = "534";
     gaugeCircle.style.strokeDashoffset = "534";
     gaugeCircle.style.transition = "stroke-dashoffset 0.15s linear";
 
+    setStartButtonLoading(true);
     try {
 
       const pingData = await measurePingAndJitter();
       lastPing = pingData.ping;
       const jitter = pingData.jitter;
 
+      showStatus("Testing download speed...");
+      setGaugePhase("phase-download");
       const downStart = performance.now();
       const res = await fetch(
         "https://speed.cloudflare.com/__down?bytes=500000000&nocache=" +
@@ -534,6 +634,8 @@ document.addEventListener("DOMContentLoaded", () => {
       const size = 25 * 1024 * 1024;
       const buffer = new Uint8Array(size);
 
+      showStatus("Testing upload speed...");
+      setGaugePhase("phase-upload");
       const upStart = performance.now();
       await fetch("https://speed.cloudflare.com/__up", {
         method: "POST",
@@ -546,6 +648,7 @@ document.addEventListener("DOMContentLoaded", () => {
       lastUp = upMbps;
 
       showResults(lastPing, lastDown, lastUp);
+      showStatus("Analyzing results...");
 
       await requestAIAnalysis(
         lastPing,
@@ -564,6 +667,9 @@ document.addEventListener("DOMContentLoaded", () => {
     } catch (err) {
       console.error("Speed Test Error:", err);
       showStatus("Test failed ❌");
+    } finally {
+      deactivateGaugeLoading();
+      setStartButtonLoading(false);
     }
   }
 
