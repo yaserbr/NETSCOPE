@@ -62,6 +62,46 @@ document.addEventListener("DOMContentLoaded", () => {
     startButton.textContent = loading ? "Testing..." : originalStartText;
   }
 
+  function getBrowserPosition() {
+    return new Promise((resolve) => {
+      if (!navigator.geolocation) {
+        console.warn("Geolocation unsupported in browser");
+        return resolve(null);
+      }
+
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          console.log("Browser location obtained:", position.coords.latitude, position.coords.longitude);
+          resolve(position);
+        },
+        (error) => {
+          console.warn("Browser location failed:", error);
+          resolve(null);
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 15000,
+          maximumAge: 0,
+        }
+      );
+    });
+  }
+
+  async function ensureTowerDistance() {
+    if (window.towerDistance !== null) {
+      return window.towerDistance;
+    }
+
+    const position = await getBrowserPosition();
+    if (!position) {
+      console.warn("Cannot determine tower distance without browser location");
+      window.towerDistance = null;
+      return null;
+    }
+
+    return await detectNearestTowerGPS(position);
+  }
+
   function setGaugePhase(phase) {
     if (!gaugeBox) return;
     gaugeBox.classList.remove("phase-ping", "phase-download", "phase-upload");
@@ -351,35 +391,46 @@ document.addEventListener("DOMContentLoaded", () => {
 
   async function detectNearestTowerGPS(position) {
 
-  if (!position) return;
+    if (!position) {
+      console.warn("detectNearestTowerGPS called without position");
+      window.towerDistance = null;
+      return null;
+    }
 
-  const lat = position.coords.latitude;
-  const lon = position.coords.longitude;
+    const lat = position.coords.latitude;
+    const lon = position.coords.longitude;
 
-  try {
+    try {
+      const ispText = document.getElementById("ispInfo")?.textContent || "";
+      const ispName = ispText.split("|")[0]?.trim();
 
-    const ispText = document.getElementById("ispInfo")?.textContent || "";
-    const ispName = ispText.split("|")[0]?.trim();
+      console.log("Sending tower lookup request with coords:", { lat, lon, ispName });
 
-    const res = await fetch("/api/nearest-tower", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        lat,
-        lon,
-        isp: ispName
-      })
-    });
+      const res = await fetch("/api/nearest-tower", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          lat,
+          lon,
+          isp: ispName
+        })
+      });
 
-    const data = await res.json();
+      const data = await res.json();
 
-    window.towerDistance = data.distance;
+      console.log("Nearest tower response:", data);
 
-  } catch (err) {
-    console.error("Tower API error:", err);
-  }
+      window.towerDistance = typeof data.distance === "number" ? data.distance : null;
+      console.log("towerDistance set:", window.towerDistance);
+      return window.towerDistance;
+
+    } catch (err) {
+      console.error("Tower API error:", err);
+      window.towerDistance = null;
+      return null;
+    }
 }
 
   // تشغيلها عند تحميل الصفحة
@@ -397,6 +448,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const ispText = document.getElementById("ispInfo")?.textContent || "";
     const ispName = ispText.split("|")[0]?.trim() || null;
 
+
+    await ensureTowerDistance();
 
     const payload = {
       ping,
@@ -456,7 +509,7 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("metricTowerDistance").textContent =
       metrics.towerDistance
         ? metrics.towerDistance.toFixed(2) + " km"
-        : "N/A";
+        : "Unavailable";
     if (output) typeAiResultText(output, text);
     if (box) {
       box.classList.remove("d-none");
