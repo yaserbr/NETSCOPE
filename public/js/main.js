@@ -727,4 +727,20 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   window.startSpeedTest = startSpeedTest;
+
+  // Info button modal logic
+  const infoBtn = document.getElementById("infoBtn");
+  const infoModal = document.getElementById("infoModal");
+
+  if (infoBtn && infoModal) {
+    infoBtn.addEventListener("click", () => {
+      infoModal.classList.remove("d-none");
+    });
+
+    infoModal.addEventListener("click", (e) => {
+      if (e.target === infoModal) {
+        infoModal.classList.add("d-none");
+      }
+    });
+  }
 });
