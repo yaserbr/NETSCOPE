@@ -4,7 +4,11 @@ const path = require("path");
 
 const app = express();
 
-app.use(cors());
+app.use(cors({
+  origin: [
+    "https://netscope-production-4c3d.up.railway.app"
+  ]
+}));
 app.use(express.json());
 
 // Frontend

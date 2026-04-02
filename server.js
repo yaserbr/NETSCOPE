@@ -2,6 +2,40 @@ require("dotenv").config();
 
 const app = require("./app");
 const OpenAI = require("openai");
+const rateLimit = require("express-rate-limit");
+
+const APP_KEY = process.env.APP_KEY;
+
+if (!APP_KEY) {
+  throw new Error("APP_KEY is not set. Please configure environment variables.");
+}
+
+// ================= RATE LIMITER =================
+
+const limiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 30,
+  message: {
+    error: "Too many requests, please try again later."
+  }
+});
+
+app.use("/api", limiter);
+
+// ================= AUTH MIDDLEWARE =================
+
+app.use((req, res, next) => {
+  const key = req.headers["x-app-key"];
+
+  if (key !== undefined) {
+    if (key !== APP_KEY) {
+      return res.status(403).json({ error: "Unauthorized" });
+    }
+    return next();
+  }
+
+  return next();
+});
 
 const ispContacts = {
   "STC": "900",
@@ -293,14 +327,6 @@ Network Stability
   }
 });
 
-// ================= KEEP ALIVE =================
-
-app.use((req, res, next) => {
-  res.set("Connection", "keep-alive");
-  next();
-});
-
-// ================= NEAREST TOWER =================
 // ================= NEAREST TOWER =================
 
 function getDistance(lat1, lon1, lat2, lon2) {
@@ -329,7 +355,7 @@ app.post("/api/nearest-tower", async (req, res) => {
     const isp = req.body.isp;
 
     if (!lat || !lon) {
-      return res.json({ error: "Missing coordinates" });
+      return res.status(400).json({ error: "Missing coordinates" });
     }
 
     const apiKey = process.env.OPENCELL_API_KEY;
@@ -356,7 +382,7 @@ app.post("/api/nearest-tower", async (req, res) => {
     const data = await response.json();
 
     if (!data || !data.cells) {
-      return res.json({ error: "No towers found" });
+      return res.status(400).json({ error: "No towers found" });
     }
 
     // فلترة الأبراج حسب المشغل
@@ -411,7 +437,7 @@ app.post("/api/isp", async (req, res) => {
     const { ip } = req.body;
 
     if (!ip) {
-      return res.json({ error: "No IP provided" });
+      return res.status(400).json({ error: "No IP provided" });
     }
 
     const response = await fetch(`https://ipinfo.io/${ip}/json`);
