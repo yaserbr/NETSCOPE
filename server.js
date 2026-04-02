@@ -17,7 +17,12 @@ const openai = new OpenAI({
 app.post("/api/analyze-ai", async (req, res) => {
   try {
 
-const { ping, jitter, download, upload, latencyUnderLoad, connection, isp, towerDistance } = req.body;
+const { ping, jitter, download, upload, latencyUnderLoad, connection, isp, towerDistance, wifiNetworks, connectedDevices, signalStrength } = req.body;
+
+    const safeWifiNetworks = wifiNetworks ?? null;
+    const safeDevices = connectedDevices ?? null;
+    const safeSignal = signalStrength ?? null;
+    const safeTowerDistance = towerDistance ?? 0;
     if (
       ping === undefined ||
       jitter === undefined ||
@@ -87,7 +92,13 @@ Latency Increase: ${latencyDifference.toFixed(1)} ms
 Latency Ratio: ${latencyRatio.toFixed(2)}
 Network Stability: ${stabilityIndex.toFixed(2)}
 Congestion Score: ${congestionScore.toFixed(2)}
-المسافة التقريبية بين المستخدم والبرج: ${Number(towerDistance).toFixed(2)} km
+المسافة التقريبية بين المستخدم والبرج: ${safeTowerDistance ? Number(safeTowerDistance).toFixed(2) : "غير متوفر"} km
+
+بيانات إضافية (إن وجدت):
+
+عدد شبكات الواي فاي القريبة: ${safeWifiNetworks ?? "غير متوفر"}
+عدد الأجهزة المتصلة: ${safeDevices ?? "غير متوفر"}
+قوة الإشارة: ${safeSignal ?? "غير متوفر"}
 
 
 مهم جداً:
@@ -141,6 +152,15 @@ Network Stability
 
 5️⃣ إذا كان Congestion Score مرتفع  
 فغالباً الشبكة الداخلية مزدحمة بسبب أجهزة أخرى.
+
+6️⃣ إذا كان عدد شبكات الواي فاي أكبر من 15:
+قد يكون هناك تداخل عالي في الشبكة.
+
+7️⃣ إذا كان عدد الأجهزة أكبر من 8:
+قد يكون هناك ضغط داخلي على الشبكة.
+
+8️⃣ إذا كانت قوة الإشارة ضعيفة:
+قد تكون المشكلة بسبب المسافة أو العوائق.
 
 
 تحليل المسافة عن البرج:
@@ -245,7 +265,10 @@ Network Stability
         stabilityIndex,
         congestionScore,
         bufferbloatGrade,
-        towerDistance
+        towerDistance,
+        wifiNetworks: safeWifiNetworks,
+        connectedDevices: safeDevices,
+        signalStrength: safeSignal
       }
     };
 
