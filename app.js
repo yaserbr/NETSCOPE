@@ -4,11 +4,25 @@ const path = require("path");
 
 const app = express();
 
+const allowedOrigins = [
+  "https://netscope-production-4c3d.up.railway.app",
+  "http://localhost:3000"
+];
+
 app.use(cors({
-  origin: [
-    "https://netscope-production-4c3d.up.railway.app"
-  ]
+  origin: (origin, callback) => {
+    // Allow Electron / Postman (no origin)
+    if (!origin) return callback(null, true);
+
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+
+    return callback(new Error("Not allowed by CORS"));
+  }
 }));
+
+
 app.use(express.json());
 
 // Frontend
