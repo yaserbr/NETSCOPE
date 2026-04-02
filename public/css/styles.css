@@ -97,6 +97,70 @@ body.dashboard-bg {
   display: none;
 }
 
+/* DESKTOP CTA */
+.desktop-cta-card {
+  background: rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(25px);
+  -webkit-backdrop-filter: blur(25px);
+  border: 1px solid rgba(255, 180, 0, 0.25);
+  border-radius: 22px;
+  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.5);
+  padding: 40px 30px;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.desktop-cta-icon {
+  font-size: 3rem;
+  margin-bottom: 12px;
+}
+
+.desktop-cta-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--gold);
+  margin-bottom: 10px;
+}
+
+.desktop-cta-text {
+  color: #ccc;
+  font-size: 1rem;
+  margin-bottom: 24px;
+  line-height: 1.6;
+}
+
+.desktop-cta-btn {
+  display: inline-block;
+  background: linear-gradient(135deg, var(--gold-soft), var(--gold));
+  color: var(--navy);
+  font-weight: 700;
+  font-size: 1rem;
+  padding: 14px 32px;
+  border-radius: 12px;
+  text-decoration: none;
+  transition: transform 0.22s ease, box-shadow 0.22s ease;
+}
+
+.desktop-cta-btn:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 14px 36px rgba(255, 180, 0, 0.3);
+  color: var(--navy);
+}
+
+.desktop-cta-btn:active {
+  transform: scale(0.96);
+}
+
+@media (max-width: 576px) {
+  .desktop-cta-card {
+    padding: 28px 18px;
+  }
+  .desktop-cta-btn {
+    padding: 12px 20px;
+    font-size: 0.9rem;
+  }
+}
+
 .warning {
   color: #ff9800;
 }
