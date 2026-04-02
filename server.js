@@ -127,6 +127,7 @@ Latency Ratio: ${latencyRatio.toFixed(2)}
 Network Stability: ${stabilityIndex.toFixed(2)}
 Congestion Score: ${congestionScore.toFixed(2)}
 المسافة التقريبية بين المستخدم والبرج: ${safeTowerDistance ? Number(safeTowerDistance).toFixed(2) : "غير متوفر"} km
+Nearby WiFi networks detected: ${safeWifiNetworks ?? 'unknown'}
 
 بيانات إضافية (إن وجدت):
 
