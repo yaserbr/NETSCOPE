@@ -714,6 +714,14 @@ button[disabled] {
   align-items: center;
   justify-content: center;
   z-index: 1000;
+  opacity: 0;
+  transition: opacity 0.35s ease;
+  pointer-events: none;
+}
+
+.info-modal.show {
+  opacity: 1;
+  pointer-events: auto;
 }
 
 .info-content {
@@ -723,6 +731,14 @@ button[disabled] {
   max-width: 700px;
   width: 90%;
   color: #fff;
+  transform: translateY(20px) scale(0.96);
+  transition: transform 0.35s ease, opacity 0.35s ease;
+  opacity: 0;
+}
+
+.info-modal.show .info-content {
+  transform: translateY(0) scale(1);
+  opacity: 1;
 }
 
 /* INFO TABLE LAYOUT */

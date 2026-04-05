@@ -733,13 +733,15 @@ document.addEventListener("DOMContentLoaded", () => {
   const infoModal = document.getElementById("infoModal");
 
   if (infoBtn && infoModal) {
+    infoModal.classList.remove("d-none");
+
     infoBtn.addEventListener("click", () => {
-      infoModal.classList.remove("d-none");
+      infoModal.classList.add("show");
     });
 
     infoModal.addEventListener("click", (e) => {
       if (e.target === infoModal) {
-        infoModal.classList.add("d-none");
+        infoModal.classList.remove("show");
       }
     });
   }
