@@ -151,6 +151,105 @@ body.dashboard-bg {
   transform: scale(0.96);
 }
 
+/* Android Download Button */
+.android-download-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 250px;
+  padding: 10px 28px;
+  background: linear-gradient(135deg, #36c376, #196c3a);
+  border-radius: 12px;
+  text-decoration: none;
+  color: #fff;
+  transition: transform 0.22s ease, box-shadow 0.22s ease;
+  justify-content: center;
+}
+
+.android-btn-logo {
+  width: 36px;
+  height: 36px;
+  object-fit: contain;
+  filter: brightness(0) invert(1);
+}
+
+.android-btn-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+  text-align: left;
+}
+
+.android-btn-text small {
+  font-size: 0.7rem;
+  opacity: 0.85;
+}
+
+.android-btn-text strong {
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.android-download-btn:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 14px 36px rgba(61, 220, 132, 0.35);
+  color: #fff;
+}
+
+.android-download-btn:active {
+  transform: scale(0.96);
+}
+
+/* Apple Download Button */
+.apple-download-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 250px;
+  padding: 10px 28px;
+  background: linear-gradient(135deg, #e0e0e0, #bdbdbd);
+  border-radius: 12px;
+  text-decoration: none;
+  color: #222;
+  transition: transform 0.22s ease, box-shadow 0.22s ease;
+  justify-content: center;
+  border: 1px solid #fff2;
+}
+
+.apple-btn-logo {
+  width: 36px;
+  height: 36px;
+  object-fit: contain;
+  filter: brightness(0.1) grayscale(1);
+}
+
+.apple-btn-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+  text-align: left;
+}
+
+.apple-btn-text small {
+  font-size: 0.7rem;
+  opacity: 0.85;
+}
+
+.apple-btn-text strong {
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.apple-download-btn:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 14px 36px rgba(180, 180, 180, 0.35);
+  color: #111;
+}
+
+.apple-download-btn:active {
+  transform: scale(0.96);
+}
+
 @media (max-width: 576px) {
   .desktop-cta-card {
     padding: 28px 18px;
@@ -158,6 +257,14 @@ body.dashboard-bg {
   .desktop-cta-btn {
     padding: 12px 20px;
     font-size: 0.9rem;
+  }
+  .android-download-btn {
+    min-width: 250px;
+    padding: 10px 20px;
+  }
+  .apple-download-btn {
+    min-width: 250px;
+    padding: 10px 20px;
   }
 }
 

@@ -197,35 +197,43 @@ direction: rtl;
             <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:6px; font-size:14px; text-align:center;">
 
               <div>Ping</div>
-              <div id="metricPing"><span id="metricPingValue">-</span> <span id="metricPingStatus" class="status"></span></div>
+              <div id="metricPing"><span id="metricPingValue">-</span> <span id="metricPingStatus"
+                  class="status"></span></div>
               <div>0-20 ms</div>
 
               <div>Jitter</div>
-              <div id="metricJitter"><span id="metricJitterValue">-</span> <span id="metricJitterStatus" class="status"></span></div>
+              <div id="metricJitter"><span id="metricJitterValue">-</span> <span id="metricJitterStatus"
+                  class="status"></span></div>
               <div>0-10 ms</div>
 
               <div>Latency Under Load</div>
-              <div id="metricLoadLatency"><span id="metricLoadLatencyValue">-</span> <span id="metricLoadLatencyStatus" class="status"></span></div>
+              <div id="metricLoadLatency"><span id="metricLoadLatencyValue">-</span> <span id="metricLoadLatencyStatus"
+                  class="status"></span></div>
               <div>0-40 ms</div>
 
               <div>Latency Ratio</div>
-              <div id="metricLatencyRatio"><span id="metricLatencyRatioValue">-</span> <span id="metricLatencyRatioStatus" class="status"></span></div>
+              <div id="metricLatencyRatio"><span id="metricLatencyRatioValue">-</span> <span
+                  id="metricLatencyRatioStatus" class="status"></span></div>
               <div>0-2</div>
 
               <div>Network Stability</div>
-              <div id="metricStability"><span id="metricStabilityValue">-</span> <span id="metricStabilityStatus" class="status"></span></div>
+              <div id="metricStability"><span id="metricStabilityValue">-</span> <span id="metricStabilityStatus"
+                  class="status"></span></div>
               <div>80-100%</div>
 
               <div>Congestion Score</div>
-              <div id="metricCongestion"><span id="metricCongestionValue">-</span> <span id="metricCongestionStatus" class="status"></span></div>
+              <div id="metricCongestion"><span id="metricCongestionValue">-</span> <span id="metricCongestionStatus"
+                  class="status"></span></div>
               <div>0-20%</div>
 
               <div>Bufferbloat Grade</div>
-              <div id="metricBufferbloat"><span id="metricBufferbloatValue">-</span> <span id="metricBufferbloatStatus" class="status"></span></div>
+              <div id="metricBufferbloat"><span id="metricBufferbloatValue">-</span> <span id="metricBufferbloatStatus"
+                  class="status"></span></div>
               <div>A-B</div>
 
               <div>Tower Distance</div>
-              <div id="metricTowerDistance"><span id="metricTowerDistanceValue">-</span> <span id="metricTowerDistanceStatus" class="status"></span></div>
+              <div id="metricTowerDistance"><span id="metricTowerDistanceValue">-</span> <span
+                  id="metricTowerDistanceStatus" class="status"></span></div>
               <div>0-1 km</div>
 
             </div>
@@ -255,10 +263,29 @@ direction: rtl;
       <p class="desktop-cta-text">
         If you want a more powerful and accurate analysis, download the desktop version.
       </p>
-      <a href="https://github.com/yaserbr/NETSCOPE-On-Desktop/releases/download/TagVersion/NETSCOPE.Setup.1.0.0.exe"
-         class="desktop-cta-btn" download>
-        ⬇ Download Desktop Version
-      </a>
+      <div style="display: flex; justify-content: center; align-items: center; gap: 20px; flex-wrap: wrap;">
+        <a href="https://github.com/yaserbr/NETSCOPE-On-Desktop/releases/download/TagVersion/NETSCOPE.Setup.1.0.0.exe"
+          class="desktop-cta-btn" style="min-width: 250px; text-align: center;" download>
+          🖥️ Download Desktop Version
+        </a>
+        <a href="https://github.com/yaserbr/NETSCOPE-On-Mobile/releases/download/Mobile/NETSCOPE-On-Mobile.apk"
+          class="android-download-btn" download>
+          <img src="/images/android-logomark.png" alt="Android" class="android-btn-logo">
+          <span class="android-btn-text">
+            <small>Download on</small>
+            <strong>Android</strong>
+          </span>
+        </a>
+      </div>
+      <div style="display: flex; justify-content: center; align-items: center; margin-top: 18px;">
+        <a href="#" class="apple-download-btn" style="min-width: 250px;" onclick="event.preventDefault(); return false;" tabindex="-1">
+          <img src="/images/apple-logo.png" alt="Apple" class="apple-btn-logo">
+          <span class="apple-btn-text">
+            <small>Download on</small>
+            <strong>iPhone (Soon)</strong>
+          </span>
+        </a>
+      </div>
     </div>
   </section>
 
@@ -272,78 +299,79 @@ direction: rtl;
     <div class="info-content" style="max-height: 80vh; overflow-y: auto;">
 
       <div class="table-responsive">
-      <table class="table table-dark table-bordered text-center" style="vertical-align: middle;">
-        <thead>
-          <tr>
-            <th class="align-middle">المؤشر</th>
-            <th class="align-middle" style="width: 13%;">الأفضل</th>
-            <th class="align-middle" style="width: 40%;">الوصف</th>
-            <th class="align-middle">ملاحظة</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td class="align-middle">Download</td>
-            <td class="align-middle">📈 أعلى</td>
-            <td class="align-middle">سرعة تحميل البيانات لجهازك  </td>
-            <td class="align-middle">مهم للتصفح ومشاهدة الفيديوهات وتحميل التطبيقات</td>
-          </tr>
-          <tr>
-            <td class="align-middle">Upload</td>
-            <td class="align-middle">📈 أعلى</td>
-            <td class="align-middle">سرعة رفع البيانات من جهازك، تأثر على إرسال الصور والفيديو </td>
-            <td class="align-middle">مهم للبث المباشر</td>
-          </tr>
-          <tr>
-            <td class="align-middle">Ping</td>
-            <td class="align-middle">📉 أقل</td>
-            <td class="align-middle">وقت استجابة الإنترنت، كلما كان أقل كان التصفح والألعاب أسرع</td>
-            <td class="align-middle">مهم جداً للألعاب</td>
-          </tr>
-          <tr>
-            <td class="align-middle">Jitter</td>
-            <td class="align-middle">📉 أقل</td>
-            <td class="align-middle">تذبذب سرعة الاستجابة، لو مرتفع يعني الاتصال غير مستقر </td>
-            <td class="align-middle">مهم للمكالمات ، ارتفاعه يسبب تقطيع في الصوت والفيديو</td>
-          </tr>
-          <tr>
-            <td class="align-middle">Latency Under Load</td>
-            <td class="align-middle">📉 أقل</td>
-            <td class="align-middle">مدى تأثر الشبكة في الاستخدام المكثف، لو صار فيه زحمة </td>
-            <td class="align-middle">مهم إذا تستخدم النت مع تحميل، لو كان مرتفع يعني الشبكة تضعف أثناء الضغط</td>
-          </tr>
-          <tr>
-            <td class="align-middle">Latency Ratio</td>
-            <td class="align-middle">⚖️ متوازن</td>
-            <td class="align-middle">مقارنة استجابة وقت الراحة بوقت الضغط، 1 يعني شبكتك ما تتأثر</td>
-            <td class="align-middle">كلما اقترب من 1 كان أفضل</td>
-          </tr>
-          <tr>
-            <td class="align-middle">Network Stability</td>
-            <td class="align-middle">📈 أعلى</td>
-            <td class="align-middle">مدى استقرار شبكتك، نسبة عالية تعني اتصال ثابت وقوي</td>
-            <td class="align-middle">مهم للاستخدام المستمر بدون انقطاع، الانخفاض يعني أن شبكتك تفصل وتعاني من انقطاعات</td>
-          </tr>
-          <tr>
-            <td class="align-middle">Congestion Score</td>
-            <td class="align-middle">📉 أقل</td>
-            <td class="align-middle">نسبة ازدحام الشبكة ، زيادته  يعني استخدام عالي للشبكة</td>
-            <td class="align-middle">مهم لمعرفة ازدحام الشبكة </td>
-          </tr>
-          <tr>
-            <td class="align-middle">Bufferbloat</td>
-            <td class="align-middle">📈 أعلى</td>
-            <td class="align-middle">تقييم أداء الشبكة تحت الضغط</td>
-            <td class="align-middle">A ممتاز / C ضعيف</td>
-          </tr>
-          <tr>
-            <td class="align-middle">Tower Distance</td>
-            <td class="align-middle">📉 أقل</td>
-            <td class="align-middle">المسافة بينك وبين أقرب برج اتصال، كلما كنت أقرب كانت الإشارة أقوى</td>
-            <td class="align-middle">كلما كنت أقرب كانت الإشارة أفضل</td>
-          </tr>
-        </tbody>
-      </table>
+        <table class="table table-dark table-bordered text-center" style="vertical-align: middle;">
+          <thead>
+            <tr>
+              <th class="align-middle">المؤشر</th>
+              <th class="align-middle" style="width: 13%;">الأفضل</th>
+              <th class="align-middle" style="width: 40%;">الوصف</th>
+              <th class="align-middle">ملاحظة</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="align-middle">Download</td>
+              <td class="align-middle">📈 أعلى</td>
+              <td class="align-middle">سرعة تحميل البيانات لجهازك </td>
+              <td class="align-middle">مهم للتصفح ومشاهدة الفيديوهات وتحميل التطبيقات</td>
+            </tr>
+            <tr>
+              <td class="align-middle">Upload</td>
+              <td class="align-middle">📈 أعلى</td>
+              <td class="align-middle">سرعة رفع البيانات من جهازك، تأثر على إرسال الصور والفيديو </td>
+              <td class="align-middle">مهم للبث المباشر</td>
+            </tr>
+            <tr>
+              <td class="align-middle">Ping</td>
+              <td class="align-middle">📉 أقل</td>
+              <td class="align-middle">وقت استجابة الإنترنت، كلما كان أقل كان التصفح والألعاب أسرع</td>
+              <td class="align-middle">مهم جداً للألعاب</td>
+            </tr>
+            <tr>
+              <td class="align-middle">Jitter</td>
+              <td class="align-middle">📉 أقل</td>
+              <td class="align-middle">تذبذب سرعة الاستجابة، لو مرتفع يعني الاتصال غير مستقر </td>
+              <td class="align-middle">مهم للمكالمات ، ارتفاعه يسبب تقطيع في الصوت والفيديو</td>
+            </tr>
+            <tr>
+              <td class="align-middle">Latency Under Load</td>
+              <td class="align-middle">📉 أقل</td>
+              <td class="align-middle">مدى تأثر الشبكة في الاستخدام المكثف، لو صار فيه زحمة </td>
+              <td class="align-middle">مهم إذا تستخدم النت مع تحميل، لو كان مرتفع يعني الشبكة تضعف أثناء الضغط</td>
+            </tr>
+            <tr>
+              <td class="align-middle">Latency Ratio</td>
+              <td class="align-middle">⚖️ متوازن</td>
+              <td class="align-middle">مقارنة استجابة وقت الراحة بوقت الضغط، 1 يعني شبكتك ما تتأثر</td>
+              <td class="align-middle">كلما اقترب من 1 كان أفضل</td>
+            </tr>
+            <tr>
+              <td class="align-middle">Network Stability</td>
+              <td class="align-middle">📈 أعلى</td>
+              <td class="align-middle">مدى استقرار شبكتك، نسبة عالية تعني اتصال ثابت وقوي</td>
+              <td class="align-middle">مهم للاستخدام المستمر بدون انقطاع، الانخفاض يعني أن شبكتك تفصل وتعاني من انقطاعات
+              </td>
+            </tr>
+            <tr>
+              <td class="align-middle">Congestion Score</td>
+              <td class="align-middle">📉 أقل</td>
+              <td class="align-middle">نسبة ازدحام الشبكة ، زيادته يعني استخدام عالي للشبكة</td>
+              <td class="align-middle">مهم لمعرفة ازدحام الشبكة </td>
+            </tr>
+            <tr>
+              <td class="align-middle">Bufferbloat</td>
+              <td class="align-middle">📈 أعلى</td>
+              <td class="align-middle">تقييم أداء الشبكة تحت الضغط</td>
+              <td class="align-middle">A ممتاز / C ضعيف</td>
+            </tr>
+            <tr>
+              <td class="align-middle">Tower Distance</td>
+              <td class="align-middle">📉 أقل</td>
+              <td class="align-middle">المسافة بينك وبين أقرب برج اتصال، كلما كنت أقرب كانت الإشارة أقوى</td>
+              <td class="align-middle">كلما كنت أقرب كانت الإشارة أفضل</td>
+            </tr>
+          </tbody>
+        </table>
       </div>
 
     </div>
@@ -356,4 +384,5 @@ direction: rtl;
   </div>
 
 </body>
+
 </html>
