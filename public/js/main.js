@@ -634,7 +634,7 @@ document.addEventListener("DOMContentLoaded", () => {
       setGaugePhase("phase-download");
       const downStart = performance.now();
       const res = await fetch(
-        "https://speed.cloudflare.com/__down?bytes=500000000&nocache=" +
+        "https://speed.cloudflare.com/__down?bytes=200000000&nocache=" +
         Date.now()
       );
 
