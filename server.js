@@ -22,20 +22,19 @@ const limiter = rateLimit({
 
 app.use("/api", limiter);
 
-// ================= AUTH MIDDLEWARE =================
+// ================= AUTH =================
 
 app.use((req, res, next) => {
   const key = req.headers["x-app-key"];
 
-  if (key !== undefined) {
-    if (key !== APP_KEY) {
-      return res.status(403).json({ error: "Unauthorized" });
-    }
-    return next();
+  if (key !== undefined && key !== APP_KEY) {
+    return res.status(403).json({ error: "Unauthorized" });
   }
 
-  return next();
+  next();
 });
+
+// ================= ISP CONTACT =================
 
 const ispContacts = {
   "STC": "900",
@@ -44,19 +43,28 @@ const ispContacts = {
   "STC Solutions": "920014400"
 };
 
+// ================= AI SETUP =================
+
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
+const deepseek = new OpenAI({
+  baseURL: "https://api.deepseek.com/v1",
+  apiKey: process.env.DEEPSEEK_API_KEY,
+});
+
+// ================= ANALYZE =================
+
 app.post("/api/analyze-ai", async (req, res) => {
   try {
 
-const { ping, jitter, download, upload, latencyUnderLoad, connection, isp, towerDistance, wifiNetworks, connectedDevices, signalStrength } = req.body;
+    const {
+      ping, jitter, download, upload, latencyUnderLoad,
+      connection, isp, towerDistance,
+      wifiNetworks, connectedDevices, signalStrength
+    } = req.body;
 
-    const safeWifiNetworks = wifiNetworks ?? null;
-    const safeDevices = connectedDevices ?? null;
-    const safeSignal = signalStrength ?? null;
-    const safeTowerDistance = towerDistance ?? 0;
     if (
       ping === undefined ||
       jitter === undefined ||
@@ -65,53 +73,24 @@ const { ping, jitter, download, upload, latencyUnderLoad, connection, isp, tower
       latencyUnderLoad === undefined ||
       !connection
     ) {
-      return res.status(400).json({
-        analysis: "بيانات ناقصة",
-      });
+      return res.status(400).json({ error: "بيانات ناقصة" });
     }
 
-    // ================= CALCULATIONS =================
+    const safeWifiNetworks = wifiNetworks ?? null;
+    const safeDevices = connectedDevices ?? null;
+    const safeSignal = signalStrength ?? null;
+    const safeTowerDistance = towerDistance ?? 0;
 
     const latencyDifference = Number(latencyUnderLoad) - Number(ping);
-
-    const latencyRatio =
-      Number(ping) > 0 ? Number(latencyUnderLoad) / Number(ping) : 0;
-
-    const stabilityIndex =
-      Number(download) / (Number(jitter) + 1);
-
-    const congestionScore =
-      Number(ping) > 0 ? latencyDifference / Number(ping) : 0;
-
-    // ================= BUFFERBLOAT =================
+    const latencyRatio = ping > 0 ? latencyUnderLoad / ping : 0;
+    const stabilityIndex = download / (jitter + 1);
+    const congestionScore = ping > 0 ? latencyDifference / ping : 0;
 
     let bufferbloatGrade;
-
     if (latencyDifference <= 5) bufferbloatGrade = "A";
     else if (latencyDifference <= 20) bufferbloatGrade = "B";
     else if (latencyDifference <= 50) bufferbloatGrade = "C";
     else bufferbloatGrade = "D";
-
-    // ================= DEBUG LOG =================
-
-    const aiVariables = {
-      connection,
-      ping,
-      jitter,
-      download,
-      upload,
-      latencyUnderLoad,
-      latencyDifference,
-      latencyRatio,
-      stabilityIndex,
-      congestionScore,
-      bufferbloatGrade
-    };
-
-    console.log("\n===== NETSCOPE AI INPUT =====");
-    console.table(aiVariables);
-
-    // ================= AI PROMPT =================
 
     const prompt = `نتائج فحص الشبكة:
 
@@ -142,10 +121,11 @@ Congestion Score: ${congestionScore.toFixed(2)}
 قواعد تحليل ذكية:
 
 1️⃣ إذا كان الاتصال WiFi:
-- إذا قوة الإشارة أقل من 50% → ركز على بعد المستخدم أو وجود جدران/عوائق
+- إذا قوة الإشارة أقل من 70% → ركز على بعد المستخدم أو وجود جدران/عوائق اكثر من العوامل الاخرى واقترح تقليل المسافة أو تحسين مكان الراوتر ولا تذكر هذي الاشياء اذا قوة الاشارة اكثر من 70%
 - إذا عدد الشبكات أكبر من 15 → ركز على التداخل بين الشبكات
 - إذا عدد الأجهزة أكبر من 8 → ركز على ضغط الشبكة الداخلية
 - لا تذكر مزود الخدمة إلا إذا الأدلة واضحة
+- اذا المسافة عن البرج اكبر من 1 كلم اذكرها كعامل ثانوي ممكن يضعف الإشارة
 
 2️⃣ إذا كان الاتصال Ethernet:
 - تجاهل مشاكل التداخل والإشارة نهائياً
@@ -178,6 +158,9 @@ Congestion Score: ${congestionScore.toFixed(2)}
 - ضعف تغطية
 - ازدحام برج
 - مشكلة من مزود الخدمة
+- البعد عن البرج
+- مشكلة في السيرفر
+- البعد عن الراوتر أو وجود عوائق
 
 
 تحديد موقع المشكلة (Root Cause):
@@ -197,7 +180,7 @@ Congestion Score: ${congestionScore.toFixed(2)}
 
 التقييم العام: (ممتاز / جيد جدا / متوسط / ضعيف)
 
-المشكلة الرئيسية: (وصف واقعي مختصر مثل: ضغط بسبب كثرة الأجهزة أو تداخل شبكات)
+المشكلة الرئيسية: (وصف واقعي مختصر مثل: ضغط بسبب كثرة الأجهزة أو تداخل شبكات أو بعد المسافة عن البرج أو ضعف تغطية أو مشكلة من مزود الخدمة أو مشكلة في السيرفر أو بعد عن الراوتر الخ الخ الخ)
 
 الموقع المحتمل: (خيار واحد فقط)
 
@@ -223,20 +206,46 @@ Congestion Score: ${congestionScore.toFixed(2)}
 - لا تكتب أي شيء خارج التنسيق
 `;
 
-    // ================= OPENAI =================
+    // ================= MULTI AI =================
 
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      messages: [{ role: "user", content: prompt }],
-      max_tokens: 180,
-    });
+    const results = await Promise.allSettled([
+      openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        messages: [{ role: "user", content: prompt }],
+        max_tokens: 180,
+      }),
+      deepseek.chat.completions.create({
+        model: "deepseek-chat",
+        messages: [{ role: "user", content: prompt }],
+        max_tokens: 180,
+      })
+    ]);
 
-    const result = completion.choices[0].message.content;
+    const openaiResult =
+      results[0].status === "fulfilled"
+        ? results[0].value.choices[0].message.content
+        : "⚠️ فشل تحليل OpenAI";
+
+    const deepseekResult =
+      results[1].status === "fulfilled"
+        ? results[1].value.choices[0].message.content
+        : "⚠️ فشل تحليل DeepSeek";
+
+    // ================= COMBINED OUTPUT =================
+
+    const combinedAnalysis = `
+🤖 ChatGPT Analysis:
+${openaiResult}
+
+━━━━━━━━━━━━━━━━━━
+
+🧠 DeepSeek Analysis:
+${deepseekResult}
+`;
 
     // ================= ISP CONTACT =================
 
     let contactISP = null;
-
     if (isp && ispContacts[isp]) {
       contactISP = {
         name: isp,
@@ -244,10 +253,11 @@ Congestion Score: ${congestionScore.toFixed(2)}
       };
     }
 
-    const responsePayload = {
-      analysis: result,
-      contactISP,
+    // ================= RESPONSE =================
 
+    res.json({
+      analysis: combinedAnalysis,
+      contactISP,
       metrics: {
         ping,
         jitter,
@@ -264,29 +274,16 @@ Congestion Score: ${congestionScore.toFixed(2)}
         connectedDevices: safeDevices,
         signalStrength: safeSignal
       }
-    };
-
-    console.log("\n===== SERVER RESPONSE =====");
-    console.log(responsePayload);
-
-    res.json(responsePayload);
+    });
 
   } catch (err) {
-
     console.error("AI Error:", err);
 
-    if (err.code === "insufficient_quota") {
-      return res.json({
-        analysis: "⚠️ خدمة الذكاء الاصطناعي غير متاحة حاليًا بسبب انتهاء الرصيد.",
-      });
-    }
-
     res.status(500).json({
-      analysis: "حدث خطأ أثناء التحليل.",
+      analysis: "حدث خطأ أثناء التحليل"
     });
   }
 });
-
 // ================= NEAREST TOWER =================
 
 function getDistance(lat1, lon1, lat2, lon2) {
@@ -440,6 +437,7 @@ app.post("/api/isp", async (req, res) => {
 
   }
 });
+// ================= START SERVER =================
 
 const PORT = 3000;
 
