@@ -314,11 +314,14 @@ app.post("/api/nearest-tower", async (req, res) => {
     const lon = Number(req.body.lon);
     const isp = req.body.isp;
 
-    if (!lat || !lon) {
+    if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
       return res.status(400).json({ error: "Missing coordinates" });
     }
 
     const apiKey = process.env.OPENCELL_API_KEY;
+    if (!apiKey) {
+      return res.status(500).json({ error: "Missing OpenCell API key" });
+    }
 
     const operatorMap = {
       STC: 1,
@@ -341,40 +344,59 @@ app.post("/api/nearest-tower", async (req, res) => {
     const response = await fetch(url);
     const data = await response.json();
 
-    if (!data || !data.cells) {
+    if (!data || !Array.isArray(data.cells) || data.cells.length === 0) {
       return res.status(400).json({ error: "No towers found" });
     }
 
     // فلترة الأبراج حسب المشغل
-    let towers = data.cells;
+    // Keep only towers with valid coordinates.
+    let towers = data.cells.filter((tower) =>
+      Number.isFinite(Number(tower?.lat)) &&
+      Number.isFinite(Number(tower?.lon))
+    );
 
     if (targetMNC) {
-      towers = data.cells.filter(tower => tower.mnc === targetMNC);
+      const filtered = towers.filter((tower) => tower.mnc === targetMNC);
 
       console.log("Filtering towers for operator:", isp);
-      console.log("Filtered towers:", towers.length);
+      console.log("Filtered towers:", filtered.length);
+
+      if (filtered.length > 0) {
+        towers = filtered;
+      }
+    }
+
+    if (towers.length === 0) {
+      return res.status(404).json({ error: "No valid tower coordinates found" });
     }
 
     let nearestTower = null;
     let minDistance = Infinity;
 
-    towers.forEach(tower => {
+    towers.forEach((tower) => {
+      const towerLat = Number(tower.lat);
+      const towerLon = Number(tower.lon);
 
       const distance = getDistance(
         lat,
         lon,
-        tower.lat,
-        tower.lon
+        towerLat,
+        towerLon
       );
 
       if (distance < minDistance) {
-
         minDistance = distance;
-        nearestTower = tower;
-
+        nearestTower = {
+          ...tower,
+          lat: towerLat,
+          lon: towerLon
+        };
       }
-
     });
+
+    if (!nearestTower || !Number.isFinite(minDistance)) {
+      return res.status(404).json({ error: "Unable to find nearest tower" });
+    }
 
     res.json({
       nearestTower,

@@ -81,9 +81,6 @@
 
       </div>
     </div>
-
-    <button onclick="startSpeedTest()">Start Now</button>
-
   </section>
 
   <main class="container pb-5">
@@ -96,7 +93,7 @@
 
           <div class="text-center mb-4">
 
-            <div class="speed-gauge" id="gaugeBox">
+            <div class="speed-gauge start-trigger" id="gaugeBox" role="button" tabindex="0" aria-label="Start speed test" aria-disabled="false">
 
               <svg viewBox="0 0 200 200">
                 <circle cx="100" cy="100" r="85" class="gauge-bg" />
@@ -240,6 +237,15 @@ direction: rtl;
 
           </div>
 
+          <div id="towerMapActions" class="tower-map-actions d-none">
+            <button id="openTowerMapBtn" type="button" class="tower-map-btn" disabled>
+              View nearest tower map
+            </button>
+            <small id="towerMapHint" class="tower-map-hint">
+              Enable location to view your position and nearest tower on a map.
+            </small>
+          </div>
+
         </div>
 
       </div>
@@ -373,6 +379,32 @@ direction: rtl;
     📍 السماح بالوصول إلى موقعك يساعد في تحديد أقرب برج شبكة
     وإعطاء تحليل أدق وأفضل لأداء شبكتك.
     <button id="enableLocationBtn">السماح </button>
+  </div>
+
+  <div id="towerMapModal" class="tower-map-modal" aria-hidden="true" role="dialog" aria-labelledby="towerMapTitle">
+    <div class="tower-map-dialog" role="document">
+      <div class="tower-map-header">
+        <div>
+          <h3 id="towerMapTitle">Nearest Tower Map</h3>
+          <p id="towerMapSummary">Map is ready.</p>
+        </div>
+        <button id="closeTowerMapBtn" type="button" class="tower-map-close" aria-label="Close map">x</button>
+      </div>
+
+      <div id="towerMapContainer" class="tower-map-canvas" aria-label="Map showing your location and nearest tower"></div>
+
+      <div class="tower-map-legend">
+        <span><i class="legend-dot legend-you"></i>Your location</span>
+        <span><i class="legend-dot legend-tower"></i>Nearest tower</span>
+      </div>
+
+      <div class="tower-map-footer">
+        <button id="recenterTowerMapBtn" type="button" class="tower-map-secondary" disabled>Recenter</button>
+        <a id="openExternalMapLink" class="tower-map-link disabled-link" href="#" target="_blank" rel="noopener noreferrer" aria-disabled="true">
+          Open in Google Maps
+        </a>
+      </div>
+    </div>
   </div>
 
 </body>

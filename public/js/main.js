@@ -53,13 +53,293 @@ document.addEventListener("DOMContentLoaded", () => {
   const gaugeBox = document.getElementById("gaugeBox");
   const gaugeText = document.getElementById("gaugeText");
   const gaugeCircle = document.getElementById("gaugeProgress");
-  const startButton = document.querySelector('button[onclick="startSpeedTest()"]');
-  const originalStartText = startButton ? startButton.textContent.trim() : "Start Now";
+  const towerMapActions = document.getElementById("towerMapActions");
+  const openTowerMapBtn = document.getElementById("openTowerMapBtn");
+  const towerMapHint = document.getElementById("towerMapHint");
+  const towerMapModal = document.getElementById("towerMapModal");
+  const closeTowerMapBtn = document.getElementById("closeTowerMapBtn");
+  const towerMapSummary = document.getElementById("towerMapSummary");
+  const towerMapContainer = document.getElementById("towerMapContainer");
+  const recenterTowerMapBtn = document.getElementById("recenterTowerMapBtn");
+  const openExternalMapLink = document.getElementById("openExternalMapLink");
 
-  function setStartButtonLoading(loading) {
-    if (!startButton) return;
-    startButton.disabled = loading;
-    startButton.textContent = loading ? "Testing..." : originalStartText;
+  const towerMapState = {
+    map: null,
+    userMarker: null,
+    towerMarker: null,
+    pathLine: null,
+    leafletScriptPromise: null,
+    leafletStyleReady: false,
+  };
+  let isTestRunning = false;
+
+  function setGaugeStartState(loading) {
+    isTestRunning = loading;
+    if (!gaugeBox) return;
+    gaugeBox.classList.toggle("testing", loading);
+    gaugeBox.setAttribute("aria-disabled", loading ? "true" : "false");
+  }
+
+  function showTowerMapActions(visible) {
+    if (!towerMapActions) return;
+    towerMapActions.classList.toggle("d-none", !visible);
+  }
+
+  function getCurrentTowerMapData() {
+    const data = window.nearestTowerData;
+    if (!data) return null;
+
+    const userLat = Number(data.user?.lat);
+    const userLon = Number(data.user?.lon);
+    const towerLat = Number(data.tower?.lat);
+    const towerLon = Number(data.tower?.lon);
+
+    if (
+      !Number.isFinite(userLat) ||
+      !Number.isFinite(userLon) ||
+      !Number.isFinite(towerLat) ||
+      !Number.isFinite(towerLon)
+    ) {
+      return null;
+    }
+
+    const distanceKm = Number(data.distanceKm);
+
+    return {
+      userLat,
+      userLon,
+      towerLat,
+      towerLon,
+      distanceKm: Number.isFinite(distanceKm) ? distanceKm : null,
+    };
+  }
+
+  function setExternalMapLinkAvailability(mapData) {
+    if (!openExternalMapLink) return;
+
+    if (!mapData) {
+      openExternalMapLink.href = "#";
+      openExternalMapLink.classList.add("disabled-link");
+      openExternalMapLink.setAttribute("aria-disabled", "true");
+      return;
+    }
+
+    const origin = `${mapData.userLat},${mapData.userLon}`;
+    const destination = `${mapData.towerLat},${mapData.towerLon}`;
+    openExternalMapLink.href =
+      `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(origin)}` +
+      `&destination=${encodeURIComponent(destination)}&travelmode=driving`;
+    openExternalMapLink.classList.remove("disabled-link");
+    openExternalMapLink.setAttribute("aria-disabled", "false");
+  }
+
+  function updateTowerMapUI() {
+    const mapData = getCurrentTowerMapData();
+    const hasMapData = Boolean(mapData);
+
+    if (openTowerMapBtn) {
+      openTowerMapBtn.disabled = !hasMapData;
+    }
+
+    if (recenterTowerMapBtn) {
+      recenterTowerMapBtn.disabled = !hasMapData || !towerMapState.map;
+    }
+
+    setExternalMapLinkAvailability(mapData);
+
+    if (!hasMapData) {
+      if (towerMapHint) {
+        towerMapHint.textContent =
+          "Location or tower data is not ready yet. Run location detection to enable the map.";
+      }
+      if (towerMapSummary) {
+        towerMapSummary.textContent =
+          "Map will be available after we detect your nearest tower.";
+      }
+      return;
+    }
+
+    const distanceLabel =
+      mapData.distanceKm !== null ? `${mapData.distanceKm.toFixed(2)} km` : "Unavailable";
+
+    if (towerMapHint) {
+      towerMapHint.textContent = `Distance to nearest tower: ${distanceLabel}.`;
+    }
+    if (towerMapSummary) {
+      towerMapSummary.textContent = `Nearest tower is ${distanceLabel} from your current location.`;
+    }
+  }
+
+  function ensureLeafletLoaded() {
+    if (window.L) {
+      return Promise.resolve(window.L);
+    }
+
+    if (!towerMapState.leafletStyleReady) {
+      const existingStyle = document.getElementById("leafletStylesheet");
+      if (!existingStyle) {
+        const link = document.createElement("link");
+        link.id = "leafletStylesheet";
+        link.rel = "stylesheet";
+        link.href = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
+        link.crossOrigin = "";
+        document.head.appendChild(link);
+      }
+      towerMapState.leafletStyleReady = true;
+    }
+
+    if (!towerMapState.leafletScriptPromise) {
+      towerMapState.leafletScriptPromise = new Promise((resolve, reject) => {
+        const existingScript = document.getElementById("leafletScript");
+        if (existingScript) {
+          existingScript.addEventListener("load", () => resolve(window.L), { once: true });
+          existingScript.addEventListener("error", () => reject(new Error("Leaflet failed to load")), { once: true });
+          return;
+        }
+
+        const script = document.createElement("script");
+        script.id = "leafletScript";
+        script.src = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js";
+        script.defer = true;
+        script.crossOrigin = "";
+        script.onload = () => resolve(window.L);
+        script.onerror = () => reject(new Error("Leaflet failed to load"));
+        document.body.appendChild(script);
+      });
+    }
+
+    return towerMapState.leafletScriptPromise.then((leaflet) => {
+      if (!leaflet) {
+        throw new Error("Leaflet is unavailable");
+      }
+      return leaflet;
+    });
+  }
+
+  async function ensureTowerMapInstance() {
+    const L = await ensureLeafletLoaded();
+    if (!towerMapContainer) return null;
+
+    if (!towerMapState.map) {
+      towerMapState.map = L.map(towerMapContainer, {
+        preferCanvas: true,
+        zoomControl: true,
+      });
+
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        maxZoom: 19,
+        attribution: "&copy; OpenStreetMap contributors",
+      }).addTo(towerMapState.map);
+    }
+
+    return towerMapState.map;
+  }
+
+  function renderTowerMap() {
+    if (!towerMapState.map || !window.L) return;
+
+    const mapData = getCurrentTowerMapData();
+    if (!mapData) {
+      updateTowerMapUI();
+      return;
+    }
+
+    const L = window.L;
+    const userLatLng = [mapData.userLat, mapData.userLon];
+    const towerLatLng = [mapData.towerLat, mapData.towerLon];
+    const userIcon = L.divIcon({
+      className: "",
+      html: '<div class="tower-map-pin pin-you"></div>',
+      iconSize: [20, 20],
+      iconAnchor: [10, 10],
+      popupAnchor: [0, -10],
+    });
+    const towerIcon = L.divIcon({
+      className: "",
+      html: '<div class="tower-map-pin pin-tower"></div>',
+      iconSize: [20, 20],
+      iconAnchor: [10, 10],
+      popupAnchor: [0, -10],
+    });
+
+    if (!towerMapState.userMarker) {
+      towerMapState.userMarker = L.marker(userLatLng, { icon: userIcon }).addTo(towerMapState.map);
+      towerMapState.userMarker.bindPopup('<p class="tower-map-popup">Your location</p>');
+    } else {
+      towerMapState.userMarker.setLatLng(userLatLng);
+      towerMapState.userMarker.setPopupContent('<p class="tower-map-popup">Your location</p>');
+    }
+
+    if (!towerMapState.towerMarker) {
+      towerMapState.towerMarker = L.marker(towerLatLng, { icon: towerIcon }).addTo(towerMapState.map);
+      towerMapState.towerMarker.bindPopup('<p class="tower-map-popup">Nearest tower</p>');
+    } else {
+      towerMapState.towerMarker.setLatLng(towerLatLng);
+      towerMapState.towerMarker.setPopupContent('<p class="tower-map-popup">Nearest tower</p>');
+    }
+
+    if (!towerMapState.pathLine) {
+      towerMapState.pathLine = L.polyline([userLatLng, towerLatLng], {
+        color: "#ffd56a",
+        weight: 3,
+        opacity: 0.85,
+        dashArray: "8 8",
+      }).addTo(towerMapState.map);
+    } else {
+      towerMapState.pathLine.setLatLngs([userLatLng, towerLatLng]);
+    }
+
+    const bounds = L.latLngBounds([userLatLng, towerLatLng]);
+    towerMapState.map.fitBounds(bounds, { padding: [45, 45], maxZoom: 15 });
+    updateTowerMapUI();
+  }
+
+  async function openTowerMapModal() {
+    const mapData = getCurrentTowerMapData();
+    if (!mapData) {
+      updateTowerMapUI();
+      return;
+    }
+
+    if (towerMapModal) {
+      towerMapModal.classList.add("show");
+      towerMapModal.setAttribute("aria-hidden", "false");
+    }
+    document.body.style.overflow = "hidden";
+
+    try {
+      await ensureTowerMapInstance();
+      renderTowerMap();
+      window.setTimeout(() => {
+        towerMapState.map?.invalidateSize();
+      }, 120);
+    } catch (error) {
+      console.error("Map initialization error:", error);
+      if (towerMapSummary) {
+        towerMapSummary.textContent = "Unable to load map now. Please try again.";
+      }
+    }
+  }
+
+  function closeTowerMapModal() {
+    if (towerMapModal) {
+      towerMapModal.classList.remove("show");
+      towerMapModal.setAttribute("aria-hidden", "true");
+    }
+    document.body.style.overflow = "";
+  }
+
+  function recenterTowerMap() {
+    if (!towerMapState.map || !window.L) return;
+
+    const mapData = getCurrentTowerMapData();
+    if (!mapData) return;
+
+    const bounds = window.L.latLngBounds(
+      [mapData.userLat, mapData.userLon],
+      [mapData.towerLat, mapData.towerLon]
+    );
+    towerMapState.map.fitBounds(bounds, { padding: [45, 45], maxZoom: 15 });
   }
 
   function getBrowserPosition() {
@@ -88,7 +368,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   async function ensureTowerDistance() {
-    if (window.towerDistance !== null) {
+    if (window.towerDistance !== null && getCurrentTowerMapData()) {
       return window.towerDistance;
     }
 
@@ -200,6 +480,9 @@ document.addEventListener("DOMContentLoaded", () => {
   let lastUp = 0;
   let latencyUnderLoad = 0;
   window.towerDistance = null;
+  window.nearestTowerData = null;
+  showTowerMapActions(false);
+  updateTowerMapUI();
 
   function showStatus(msg) {
     const el = document.getElementById("statusText");
@@ -394,6 +677,9 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!position) {
       console.warn("detectNearestTowerGPS called without position");
       window.towerDistance = null;
+      window.nearestTowerData = null;
+      showTowerMapActions(false);
+      updateTowerMapUI();
       return null;
     }
 
@@ -419,19 +705,47 @@ document.addEventListener("DOMContentLoaded", () => {
       });
 
       const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data?.error || "Tower lookup failed");
+      }
 
       console.log("Nearest tower response:", data);
 
-      window.towerDistance = typeof data.distance === "number" ? data.distance : null;
+      const distance = Number(data?.distance);
+      const towerLat = Number(data?.nearestTower?.lat);
+      const towerLon = Number(data?.nearestTower?.lon);
+
+      window.towerDistance =
+        Number.isFinite(distance) && distance >= 0 ? distance : null;
+
+      if (Number.isFinite(towerLat) && Number.isFinite(towerLon)) {
+        window.nearestTowerData = {
+          user: { lat, lon },
+          tower: {
+            lat: towerLat,
+            lon: towerLon,
+          },
+          distanceKm: window.towerDistance,
+          updatedAt: Date.now(),
+        };
+      } else {
+        window.nearestTowerData = null;
+      }
+
       console.log("towerDistance set:", window.towerDistance);
+      showTowerMapActions(Boolean(window.nearestTowerData));
+      updateTowerMapUI();
       return window.towerDistance;
 
     } catch (err) {
       console.error("Tower API error:", err);
       window.towerDistance = null;
+      window.nearestTowerData = null;
+      showTowerMapActions(false);
+      updateTowerMapUI();
       return null;
     }
-}
+  }
 
   // تشغيلها عند تحميل الصفحة
 
@@ -506,10 +820,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const metricsBox = document.getElementById("connectionDetailsComponent");
 
-    document.getElementById("metricTowerDistance").textContent =
-      metrics.towerDistance
-        ? metrics.towerDistance.toFixed(2) + " km"
-        : "Unavailable";
     if (output) typeAiResultText(output, text);
     if (box) {
       box.classList.remove("d-none");
@@ -543,8 +853,12 @@ document.addEventListener("DOMContentLoaded", () => {
       );
 
       metricsBox.classList.remove("d-none");
+      showTowerMapActions(true);
+      updateTowerMapUI();
     } else if (metricsBox) {
       metricsBox.classList.add("d-none");
+      showTowerMapActions(false);
+      closeTowerMapModal();
     }
 
   }
@@ -598,6 +912,9 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   async function startSpeedTest() {
+    if (isTestRunning) {
+      return;
+    }
 
     activateGaugeLoading();
     setGaugePhase("phase-ping");
@@ -623,7 +940,7 @@ document.addEventListener("DOMContentLoaded", () => {
     gaugeCircle.style.strokeDashoffset = "534";
     gaugeCircle.style.transition = "stroke-dashoffset 0.15s linear";
 
-    setStartButtonLoading(true);
+    setGaugeStartState(true);
     try {
 
       const pingData = await measurePingAndJitter();
@@ -722,11 +1039,46 @@ document.addEventListener("DOMContentLoaded", () => {
       showStatus("Test failed ❌");
     } finally {
       deactivateGaugeLoading();
-      setStartButtonLoading(false);
+      setGaugeStartState(false);
     }
   }
 
   window.startSpeedTest = startSpeedTest;
+
+  gaugeBox?.addEventListener("click", () => {
+    startSpeedTest();
+  });
+
+  gaugeBox?.addEventListener("keydown", (event) => {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      startSpeedTest();
+    }
+  });
+
+  openTowerMapBtn?.addEventListener("click", () => {
+    openTowerMapModal();
+  });
+
+  closeTowerMapBtn?.addEventListener("click", () => {
+    closeTowerMapModal();
+  });
+
+  towerMapModal?.addEventListener("click", (e) => {
+    if (e.target === towerMapModal) {
+      closeTowerMapModal();
+    }
+  });
+
+  recenterTowerMapBtn?.addEventListener("click", () => {
+    recenterTowerMap();
+  });
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && towerMapModal?.classList.contains("show")) {
+      closeTowerMapModal();
+    }
+  });
 
   // Info button modal logic
   const infoBtn = document.getElementById("infoBtn");
